@@ -1,0 +1,6 @@
+{
+  "name": "סידור נועה AI",
+  "description": "מערכת הפעלה לוגיסטית, דוח בוקר וסידור עבודה בוואטסאפ — ח. סבן חומרי בניין בע\"מ עם נועה AI, שיבוץ נהגים, פענוח תעודות משלוח ומצב נהג PWA",
+  "requestFramePermissions": ["camera", "microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

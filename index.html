@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>סידור נועה AI — ח. סבן חומרי בניין בע"מ</title>
+    <meta name="description" content="מערכת הפעלה לוגיסטית ושיגור בוואטסאפ לנהגים וסדרנות ח. סבן חומרי בניין" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;500;600;700;800&family=Rubik:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#0B0F17" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+    <!-- OneSignal Web SDK v16 for Driver PWA Push Notifications -->
+    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+    <script>
+      window.OneSignalDeferred = window.OneSignalDeferred || [];
+      window.OneSignalDeferred.push(async function(OneSignal) {
+        try {
+          await OneSignal.init({
+            appId: "8f9c9417-530c-41e2-8a65-850d10758258",
+            safari_web_id: "8f9c9417-530c-41e2-8a65-850d10758258",
+            notifyButton: {
+              enable: false,
+            },
+            allowLocalhostAsSecureOrigin: true,
+            serviceWorkerParam: { scope: '/' },
+            serviceWorkerPath: '/OneSignalSDKWorker.js',
+          });
+          console.log("✅ OneSignal SDK initialized successfully for Noa Saban PWA");
+        } catch (e) {
+          console.warn("OneSignal initialization note:", e);
+        }
+      });
+    </script>
+  </head>
+  <body class="bg-[#0B0F17] text-slate-100 font-['Rubik',sans-serif] selection:bg-cyan-500/30 selection:text-cyan-200 antialiased overflow-x-hidden">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+
