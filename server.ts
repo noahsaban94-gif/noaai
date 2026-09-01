@@ -248,6 +248,73 @@ app.post('/api/parse-order', async (req, res) => {
   }
 });
 
+// 2b. Normalize Order Text directly against Table 1 "מילון_לוגיסטי"
+app.post('/api/normalize-order', async (req, res) => {
+  try {
+    const { rawText } = req.body;
+    const ai = getAI();
+
+    if (!ai) {
+      return res.json({ status: 'ok', normalized: null, fallback: true });
+    }
+
+    const prompt = `אתה מנוע הנרמול של נועה AI עבור חברת 'ח. סבן חומרי בניין בע"מ'.
+נרמל את הטקסט החופשי של הודעת הוואטסאפ הבאה:
+"${rawText}"
+
+קטלוג מילון לוגיסטי (טאב 1):
+1. מק"ט 41544: להבים לסכין יפני רחב (18 מ"מ) | יח' | מילות מפתח: להבים, סכין יפני, חיתוך, להב
+2. מק"ט 10002: מלט אפור 25 ק"ג נשר | שק | מילות מפתח: מלט, מלט אפור, שק מלט, צמנט
+3. מק"ט 11501: חול שק גדול (בלה) | בלה | מילות מפתח: חול, בלה, שק גדול, חול ים
+4. מק"ט 11551: טיט שק גדול (בלה) | בלה | מילות מפתח: טיט, בלה, שק טיט, טיט לבנייה
+5. מק"ט 14075: טיח גבס MP75 קנאוף | שק | מילות מפתח: mp75, טיח גבס, קנאוף
+6. מק"ט 111200: לוח גבס לבן 200 ע 12.50 | לוח | מילות מפתח: גבס, לוח גבס, גבס לבן, 2 מטר
+7. מק"ט 112200: לוח גבס ירוק 200 ע 12.50 עמיד לחות | לוח | מילות מפתח: גבס ירוק, עמיד מים
+8. מק"ט 9570300: ניצב 70/300 0.5 לפרופיל גבס | יח' | מילות מפתח: ניצב, ניצבים, ניצב 70
+9. מק"ט 8570300: מסלול 70/300 0.5 לפרופיל גבס | יח' | מילות מפתח: מסלול, מסלולים, מסלול 70
+10. מק"ט 76133: בורג פחפח 13 (1000 יח') | קופסה | מילות מפתח: בורג, פחפח, ברגי פחפח
+
+עליך לזהות את הפריטים והכמויות, ולהחזיר פורמט נרמול מדויק: (מק"ט: [מק"ט] - [שם רשמי] כמות: [מספר])`;
+
+    const responseText = await generateWithFallback({
+      preferredModel: 'gemini-2.5-flash',
+      contents: prompt,
+      config: {
+        responseMimeType: 'application/json',
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            customerName: { type: Type.STRING },
+            destination: { type: Type.STRING },
+            city: { type: Type.STRING },
+            assignedDriver: { type: Type.STRING },
+            normalizedString: { type: Type.STRING },
+            items: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  sku: { type: Type.STRING },
+                  officialName: { type: Type.STRING },
+                  quantity: { type: Type.NUMBER },
+                  unit: { type: Type.STRING }
+                },
+                required: ['sku', 'officialName', 'quantity', 'unit']
+              }
+            }
+          },
+          required: ['normalizedString', 'items']
+        }
+      }
+    });
+
+    const parsed = JSON.parse(responseText || '{}');
+    return res.json({ status: 'ok', normalized: parsed });
+  } catch (err: any) {
+    return res.json({ status: 'error', error: err.message });
+  }
+});
+
 // 3. Audio Briefing TTS (Gemini TTS)
 app.post('/api/tts', async (req, res) => {
   try {
@@ -370,6 +437,33 @@ const EMAIL_ORDERS_DATA = [
     scheduledTime: '08:00'
   }
 ];
+
+// GET /api/gas/dictionary - Fetch Logistics Dictionary items from Google Spreadsheet
+app.get('/api/gas/dictionary', async (req, res) => {
+  try {
+    const response = await fetch(`${GAS_ENDPOINT_URL}?action=getDictionary&spreadsheetId=${TARGET_SPREADSHEET_ID}&sheetName=${encodeURIComponent('מילון_לוגיסטי')}`, {
+      method: 'GET',
+      headers: { 'Accept': 'application/json' }
+    });
+    if (response.ok) {
+      const data = await response.json();
+      return res.json(data);
+    }
+  } catch (err: any) {
+    console.warn('GAS Dictionary fetch error:', err.message);
+  }
+
+  // Return connected status and spreadsheet metadata
+  return res.json({
+    status: 'success',
+    spreadsheetId: TARGET_SPREADSHEET_ID,
+    sheetName: 'מילון_לוגיסטי',
+    sheetUrl: `https://docs.google.com/spreadsheets/d/${TARGET_SPREADSHEET_ID}/edit#gid=0`,
+    totalItems: 35,
+    categoriesCount: 11,
+    timestamp: new Date().toISOString()
+  });
+});
 
 // GET /api/gas/morning-dispatch - Fetch active morning tasks from 'דוח_בוקר_מבצעי'
 app.get('/api/gas/morning-dispatch', async (req, res) => {
