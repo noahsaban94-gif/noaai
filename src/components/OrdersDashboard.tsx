@@ -619,16 +619,17 @@ export const OrdersDashboard: React.FC<OrdersDashboardProps> = ({
       {/* VIEW MODE 1: LIVE INTERACTIVE ORDER CARDS (Featured View) */}
       {viewMode === 'cards' && (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-5">
-          {filteredOrders.map((order) => {
+          {filteredOrders.map((order, index) => {
             const step = getOrderProgressStep(order.status);
-            const orderIdStr = order.orderId || order.orderNumber;
+            const orderIdStr = order.orderId || order.orderNumber || `ORD-${index}`;
             const isCopied = copiedId === orderIdStr;
             const isHikmat = (order.assignedDriver || order.driver || '').includes('חכמת');
             const driverPhone = isHikmat ? '0508861080' : '0527714490';
+            const uniqueCardKey = `card-${orderIdStr}-${index}`;
 
             return (
               <div
-                key={orderIdStr}
+                key={uniqueCardKey}
                 onClick={() => setSelectedOrder(order)}
                 className={`group relative rounded-3xl p-5 shadow-lg hover:shadow-2xl transition-all duration-200 cursor-pointer flex flex-col justify-between overflow-hidden border ${
                   isLight
@@ -1011,16 +1012,19 @@ export const OrdersDashboard: React.FC<OrdersDashboardProps> = ({
 
                 {/* Orders in Column */}
                 <div className="space-y-3 flex-1 overflow-y-auto pr-0.5 scrollbar-thin">
-                  {colOrders.map((order) => (
-                    <div
-                      key={order.orderNumber || order.orderId}
-                      onClick={() => setSelectedOrder(order)}
-                      className={`border rounded-2xl p-4 space-y-3 cursor-pointer transition-all shadow-md group ${
-                        isLight
-                          ? 'bg-white hover:bg-sky-50/50 border-slate-200 hover:border-sky-300'
-                          : 'bg-slate-950/90 border-slate-800 hover:border-cyan-500/60'
-                      }`}
-                    >
+                  {colOrders.map((order, orderIdx) => {
+                    const kOrderId = order.orderNumber || order.orderId || `col-${orderIdx}`;
+                    const uniqueKanbanKey = `kanban-${col.id}-${kOrderId}-${orderIdx}`;
+                    return (
+                      <div
+                        key={uniqueKanbanKey}
+                        onClick={() => setSelectedOrder(order)}
+                        className={`border rounded-2xl p-4 space-y-3 cursor-pointer transition-all shadow-md group ${
+                          isLight
+                            ? 'bg-white hover:bg-sky-50/50 border-slate-200 hover:border-sky-300'
+                            : 'bg-slate-950/90 border-slate-800 hover:border-cyan-500/60'
+                        }`}
+                      >
                       {/* Top Row: Order ID, Eye Document Button, Warehouse */}
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-1.5">
@@ -1131,7 +1135,8 @@ export const OrdersDashboard: React.FC<OrdersDashboardProps> = ({
                         </div>
                       </div>
                     </div>
-                  ))}
+                  );
+                })}
 
                   {colOrders.length === 0 && (
                     <div className={`h-40 flex items-center justify-center text-xs font-bold border border-dashed rounded-2xl ${
@@ -1170,14 +1175,17 @@ export const OrdersDashboard: React.FC<OrdersDashboardProps> = ({
                 </tr>
               </thead>
               <tbody className={`divide-y ${isLight ? 'divide-slate-200' : 'divide-slate-800/60'}`}>
-                {filteredOrders.map((order) => (
-                  <tr
-                    key={order.orderNumber || order.orderId}
-                    onClick={() => setSelectedOrder(order)}
-                    className={`cursor-pointer transition ${
-                      isLight ? 'hover:bg-sky-50/50' : 'hover:bg-slate-800/40'
-                    }`}
-                  >
+                {filteredOrders.map((order, gIdx) => {
+                  const gOrderId = order.orderNumber || order.orderId || `grid-${gIdx}`;
+                  const uniqueGridKey = `grid-row-${gOrderId}-${gIdx}`;
+                  return (
+                    <tr
+                      key={uniqueGridKey}
+                      onClick={() => setSelectedOrder(order)}
+                      className={`cursor-pointer transition ${
+                        isLight ? 'hover:bg-sky-50/50' : 'hover:bg-slate-800/40'
+                      }`}
+                    >
                     <td className={`p-4 font-mono font-black ${isLight ? 'text-sky-700' : 'text-cyan-400'}`}>
                       #{order.orderId || order.orderNumber}
                     </td>
@@ -1260,7 +1268,8 @@ export const OrdersDashboard: React.FC<OrdersDashboardProps> = ({
                       </div>
                     </td>
                   </tr>
-                ))}
+                );
+              })}
               </tbody>
             </table>
           </div>

@@ -13,10 +13,13 @@ import {
   ExternalLink,
   ShieldAlert,
   Layers,
-  Sparkles
+  Sparkles,
+  Map as MapIcon,
+  ListFilter
 } from 'lucide-react';
 import { SABAN_DRIVERS } from '../data/mockData';
 import { Order } from '../types';
+import { LeafletRouteMap } from './LeafletRouteMap';
 
 interface DriverPWAViewProps {
   orders: Order[];
@@ -30,6 +33,7 @@ export const DriverPWAView: React.FC<DriverPWAViewProps> = ({
   onSendWhatsApp
 }) => {
   const [selectedDriverId, setSelectedDriverId] = useState<string>('hikmat');
+  const [driverViewMode, setDriverViewMode] = useState<'cards' | 'map' | 'split'>('cards');
   const [pushStatus, setPushStatus] = useState<string | null>(null);
   const [isSendingPush, setIsSendingPush] = useState<boolean>(false);
   const [activeSignOrder, setActiveSignOrder] = useState<string | null>(null);
@@ -95,28 +99,71 @@ export const DriverPWAView: React.FC<DriverPWAViewProps> = ({
           </div>
         </div>
 
-        {/* Driver selector pills */}
-        <div className="flex items-center gap-2 w-full sm:w-auto">
-          <button
-            onClick={() => setSelectedDriverId('hikmat')}
-            className={`flex-1 sm:flex-initial px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 ${
-              selectedDriverId === 'hikmat'
-                ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20'
-                : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-            }`}
-          >
-            <span>חכמת (מנוף 26ט)</span>
-          </button>
-          <button
-            onClick={() => setSelectedDriverId('ali')}
-            className={`flex-1 sm:flex-initial px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 ${
-              selectedDriverId === 'ali'
-                ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20'
-                : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-            }`}
-          >
-            <span>עלי (משאית 15ט)</span>
-          </button>
+        {/* Driver selector pills & View Mode switcher */}
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+          {/* Driver Switch */}
+          <div className="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800">
+            <button
+              onClick={() => setSelectedDriverId('hikmat')}
+              className={`px-3 py-2 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
+                selectedDriverId === 'hikmat'
+                  ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <span>חכמת (מנוף 26ט)</span>
+            </button>
+            <button
+              onClick={() => setSelectedDriverId('ali')}
+              className={`px-3 py-2 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
+                selectedDriverId === 'ali'
+                  ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <span>עלי (משאית 15ט)</span>
+            </button>
+          </div>
+
+          {/* View Mode Switch (Cards vs Leaflet Map) */}
+          <div className="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800">
+            <button
+              onClick={() => setDriverViewMode('cards')}
+              className={`px-2.5 py-2 rounded-lg text-xs font-bold transition flex items-center gap-1 ${
+                driverViewMode === 'cards'
+                  ? 'bg-slate-700 text-white shadow'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+              title="תצוגת כרטיסי פריקה"
+            >
+              <ListFilter className="w-3.5 h-3.5" />
+              <span>תחנות</span>
+            </button>
+            <button
+              onClick={() => setDriverViewMode('map')}
+              className={`px-2.5 py-2 rounded-lg text-xs font-bold transition flex items-center gap-1 ${
+                driverViewMode === 'map'
+                  ? 'bg-cyan-500 text-slate-950 shadow'
+                  : 'text-slate-400 hover:text-cyan-400'
+              }`}
+              title="מפת Leaflet ניווט חי"
+            >
+              <MapIcon className="w-3.5 h-3.5" />
+              <span>מפת Leaflet</span>
+            </button>
+            <button
+              onClick={() => setDriverViewMode('split')}
+              className={`px-2.5 py-2 rounded-lg text-xs font-bold transition flex items-center gap-1 hidden sm:flex ${
+                driverViewMode === 'split'
+                  ? 'bg-slate-700 text-white shadow'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+              title="תצוגה משולבת (מפה + כרטיסים)"
+            >
+              <Layers className="w-3.5 h-3.5" />
+              <span>משולב</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -130,7 +177,20 @@ export const DriverPWAView: React.FC<DriverPWAViewProps> = ({
         </div>
       )}
 
-      {/* Driver Active Orders Queue */}
+      {/* LEAFLET MAP VIEW (Full or Split) */}
+      {(driverViewMode === 'map' || driverViewMode === 'split') && (
+        <div className="space-y-3">
+          <LeafletRouteMap
+            orders={orders}
+            selectedDriverFilter={selectedDriverId}
+            heightClass={driverViewMode === 'map' ? 'h-[680px]' : 'h-[440px]'}
+            isPWACompact={true}
+          />
+        </div>
+      )}
+
+      {/* Driver Active Orders Queue (Cards View or Split Bottom) */}
+      {(driverViewMode === 'cards' || driverViewMode === 'split') && (
       <div className="space-y-4">
         {driverOrders.length === 0 ? (
           <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-10 text-center">
@@ -283,6 +343,7 @@ export const DriverPWAView: React.FC<DriverPWAViewProps> = ({
           })
         )}
       </div>
+      )}
     </div>
   );
 };

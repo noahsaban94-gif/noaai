@@ -48,6 +48,7 @@ import {
   UnloadSequenceStep
 } from '../utils/geoRouting';
 import { useTheme } from '../context/ThemeContext';
+import { LeafletRouteMap } from './LeafletRouteMap';
 
 interface RouteDensityMapProps {
   orders: Order[];
@@ -62,6 +63,9 @@ export const RouteDensityMap: React.FC<RouteDensityMapProps> = ({
 }) => {
   const { theme } = useTheme();
   const isLight = theme === 'light';
+
+  // Map Engine selector: 'leaflet' (OpenStreetMap/PWA) vs 'd3' (Vector/LIFO Density)
+  const [mapEngine, setMapEngine] = useState<'leaflet' | 'd3'>('leaflet');
 
   const svgRef = useRef<SVGSVGElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -620,64 +624,92 @@ function setupEntireLogisticsSystem() {
           </div>
         )}
 
-        {/* Interactive Layer Switches (שכבות מעל המפה) */}
-        <div className="mt-4 pt-3 border-t flex flex-wrap items-center gap-2">
-          <span className="text-xs font-bold ml-2 opacity-80 flex items-center gap-1">
-            <Layers className="w-3.5 h-3.5" />
-            שכבות תצוגה:
-          </span>
+        {/* Interactive Layer Switches & Engine Switcher */}
+        <div className="mt-4 pt-3 border-t flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs font-bold ml-2 opacity-80 flex items-center gap-1">
+              <Layers className="w-3.5 h-3.5" />
+              שכבות תצוגה:
+            </span>
 
-          {/* Layer 1: Live Orders */}
-          <button
-            onClick={() => setShowLiveOrdersLayer(!showLiveOrdersLayer)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition ${
-              showLiveOrdersLayer
-                ? isLight ? 'bg-sky-100 text-sky-800 border-sky-300' : 'bg-sky-950 text-sky-200 border-sky-700'
-                : 'opacity-50 border-transparent hover:opacity-80'
-            }`}
-          >
-            <MapPin className="w-3.5 h-3.5 text-sky-500" />
-            <span>1. הזמנות חיות ({filteredOrders.length})</span>
-          </button>
+            {/* Layer 1: Live Orders */}
+            <button
+              onClick={() => setShowLiveOrdersLayer(!showLiveOrdersLayer)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition ${
+                showLiveOrdersLayer
+                  ? isLight ? 'bg-sky-100 text-sky-800 border-sky-300' : 'bg-sky-950 text-sky-200 border-sky-700'
+                  : 'opacity-50 border-transparent hover:opacity-80'
+              }`}
+            >
+              <MapPin className="w-3.5 h-3.5 text-sky-500" />
+              <span>1. הזמנות חיות ({filteredOrders.length})</span>
+            </button>
 
-          {/* Layer 2: Visit History & AI Demand */}
-          <button
-            onClick={() => setShowVisitHistoryLayer(!showVisitHistoryLayer)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition ${
-              showVisitHistoryLayer
-                ? isLight ? 'bg-purple-100 text-purple-800 border-purple-300' : 'bg-purple-950 text-purple-200 border-purple-700'
-                : 'opacity-50 border-transparent hover:opacity-80'
-            }`}
-          >
-            <Sparkles className="w-3.5 h-3.5 text-purple-500" />
-            <span>2. היסטוריית ביקורים וחיזוי ביקושים</span>
-          </button>
+            {/* Layer 2: Visit History & AI Demand */}
+            <button
+              onClick={() => setShowVisitHistoryLayer(!showVisitHistoryLayer)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition ${
+                showVisitHistoryLayer
+                  ? isLight ? 'bg-purple-100 text-purple-800 border-purple-300' : 'bg-purple-950 text-purple-200 border-purple-700'
+                  : 'opacity-50 border-transparent hover:opacity-80'
+              }`}
+            >
+              <Sparkles className="w-3.5 h-3.5 text-purple-500" />
+              <span>2. היסטוריית ביקורים וחיזוי ביקושים</span>
+            </button>
 
-          {/* Layer 3: Optimized Route & LIFO Crane */}
-          <button
-            onClick={() => setShowOptimizedRouteLayer(!showOptimizedRouteLayer)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition ${
-              showOptimizedRouteLayer
-                ? isLight ? 'bg-emerald-100 text-emerald-800 border-emerald-300' : 'bg-emerald-950 text-emerald-200 border-emerald-700'
-                : 'opacity-50 border-transparent hover:opacity-80'
-            }`}
-          >
-            <Zap className="w-3.5 h-3.5 text-emerald-500" />
-            <span>3. מסלול רב-יעדים וסדר פריקה מנוף</span>
-          </button>
+            {/* Layer 3: Optimized Route & LIFO Crane */}
+            <button
+              onClick={() => setShowOptimizedRouteLayer(!showOptimizedRouteLayer)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition ${
+                showOptimizedRouteLayer
+                  ? isLight ? 'bg-emerald-100 text-emerald-800 border-emerald-300' : 'bg-emerald-950 text-emerald-200 border-emerald-700'
+                  : 'opacity-50 border-transparent hover:opacity-80'
+              }`}
+            >
+              <Zap className="w-3.5 h-3.5 text-emerald-500" />
+              <span>3. מסלול רב-יעדים וסדר פריקה מנוף</span>
+            </button>
 
-          {/* Layer 4: Drawing & Notes Canvas Overlay */}
-          <button
-            onClick={() => setShowDrawingLayer(!showDrawingLayer)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition ${
-              showDrawingLayer
-                ? isLight ? 'bg-rose-100 text-rose-800 border-rose-300' : 'bg-rose-950 text-rose-200 border-rose-700'
-                : 'opacity-50 border-transparent hover:opacity-80'
-            }`}
-          >
-            <PenTool className="w-3.5 h-3.5 text-rose-500" />
-            <span>4. שכבת ציור והערות מפקח</span>
-          </button>
+            {/* Layer 4: Drawing & Notes Canvas Overlay */}
+            <button
+              onClick={() => setShowDrawingLayer(!showDrawingLayer)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition ${
+                showDrawingLayer
+                  ? isLight ? 'bg-rose-100 text-rose-800 border-rose-300' : 'bg-rose-950 text-rose-200 border-rose-700'
+                  : 'opacity-50 border-transparent hover:opacity-80'
+              }`}
+            >
+              <PenTool className="w-3.5 h-3.5 text-rose-500" />
+              <span>4. שכבת ציור והערות מפקח</span>
+            </button>
+          </div>
+
+          {/* Engine Selector */}
+          <div className="flex items-center bg-slate-900/80 p-1 rounded-xl border border-slate-800">
+            <button
+              onClick={() => setMapEngine('leaflet')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
+                mapEngine === 'leaflet'
+                  ? 'bg-cyan-500 text-slate-950 shadow-md'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <Navigation className="w-3.5 h-3.5" />
+              <span>מפת Leaflet JS אופליין (JONI + נהגים)</span>
+            </button>
+            <button
+              onClick={() => setMapEngine('d3')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
+                mapEngine === 'd3'
+                  ? 'bg-sky-600 text-white shadow-md'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <Layers className="w-3.5 h-3.5" />
+              <span>מפת D3 וקטורית / חום וצפיפות</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -687,7 +719,15 @@ function setupEntireLogisticsSystem() {
         {/* Map Stage (Columns 8 of 12) */}
         <div className="lg:col-span-8 flex flex-col gap-4">
           
-          {/* Map Canvas Container */}
+          {mapEngine === 'leaflet' ? (
+            <LeafletRouteMap
+              orders={filteredOrders}
+              selectedDriverFilter={selectedDriver}
+              onSelectOrder={onSelectOrder}
+              heightClass="h-[650px]"
+            />
+          ) : (
+          /* Map Canvas Container */
           <div 
             ref={containerRef}
             className={`relative w-full h-[620px] rounded-2xl border overflow-hidden shadow-lg transition-all ${
@@ -820,6 +860,7 @@ function setupEntireLogisticsSystem() {
               </div>
             </div>
           </div>
+          )}
 
           {/* Unloading Sequence Conflict Warning & Auto-Fix Banner */}
           {optimizationResults.sequenceConflictsDetected > 0 && (
