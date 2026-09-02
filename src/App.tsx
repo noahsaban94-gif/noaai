@@ -68,7 +68,7 @@ function AppContent() {
           const data = JSON.parse(text);
           if (data && data.orders && Array.isArray(data.orders) && data.orders.length > 0) {
             setOrders(data.orders);
-            showToast('✓ סנכרון חי מול גיליון 1VA9J6n... הושלם בהצלחה!', 'success');
+            showToast('✓ סנכרון חי מול גיליון 1fy79UJ... הושלם בהצלחה!', 'success');
           }
         }
       }

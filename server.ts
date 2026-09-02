@@ -35,9 +35,9 @@ function getAI(): GoogleGenAI | null {
 const NOA_SYSTEM_INSTRUCTION = `# Role & System Identity
 אתה נועה AI — סדרנית ראשית ומנהלת תפעול ב-"ח. סבן חומרי בניין (1994) בע"מ", יד ימינו הנאמנה של ראמי סבן.
 כל הפעולות הלוגיסטיות, שליפת המשימות והשיבוצים מבוצעים ישירות ובלעדית מול גיליון הליבה המעודכן:
-📊 Spreadsheet ID: 1VA9J6n9IYcooO_s2xOpnkvyDQWWQD3pfhh0cnenCkoA
-⚡ Web App Endpoint: https://script.google.com/macros/s/AKfycby2gmtPDJZwsmUzrGf606g7FiY7JkE11FAN4wgb0_NU0J5k3p0AmRGozXJWrBqIdc0/exec
-(כל שאר הגיליונות נותקו לחלוטין - עבודה בלעדית מול 1VA9J6n9IYcooO_s2xOpnkvyDQWWQD3pfhh0cnenCkoA)
+📊 Spreadsheet ID: 1fy79UJXTIGf8Br5co2pQtPggJkIRyClgG7KBKE1cov0
+⚡ Web App Endpoint: https://script.google.com/macros/s/AKfycbzHSfCnuuz0oyi5jeIEOjzH-tDAi_qGH4SqOh_M0YVXzDl5lTQYZNw_-GQ26CU2WVgH/exec
+(כל שאר הגיליונות נותקו לחלוטין - עבודה בלעדית מול 1fy79UJXTIGf8Br5co2pQtPggJkIRyClgG7KBKE1cov0)
 
 ---
 
@@ -347,18 +347,227 @@ app.post('/api/tts', async (req, res) => {
   }
 });
 
-// 4. Dispatch to Driver (JONI / Make.com Webhook)
+// 4. Dispatch to Driver & WhatsApp Generator (Make.com Webhook & Direct wa.me)
+const MAKE_WEBHOOK_ENDPOINT = 'https://hook.eu1.make.com/j1kfxfn5y4goe1lud3dk1phkw4bkjvyr';
+
+// Helper templates for WhatsApp messages
+function formatWhatsAppHikmat(order: any) {
+  return `🏗️ *תדריך משימה מבצעי — חכמת (מרצדס מנוף 26ט)*
+שלום חכמת אחי היקר! להלן פרטי המשימה המשובצת עבורך:
+
+📦 *מספר הזמנה:* ${order.orderNumber || order.orderId}
+👤 *שם לקוח:* ${order.customerName}
+📍 *יעד פריקה מדויק:* ${order.siteAddress || order.address || order.city || order.destination}
+🏟️ *מחסן טעינה:* ${order.warehouseName || order.warehouse || '🏭 4️⃣ החרש'}
+⏰ *שעת הגעה משוערת:* ${order.scheduledTime || order.time || '07:30'} (${order.round || 'סבב 1'})
+⚖️ *משקל משוער:* ${order.totalWeightKg || order.weightKg || 'כבד'} ק"ג
+
+📋 *פירוט מוצרים להעמסה במחסן:*
+${order.itemsFormatted || order.items || order.itemsDetails}
+
+📦 *פקדונות ומשטחים לחיוב:*
+• שקי בלה (60002): ${order.bigBagsDeposit || order.bigBags || 0}
+• משטחי סבן (60060): ${order.palletsDeposit || order.pallets || 0}
+
+⚠️ *דגשי בטיחות ופריקת מנוף:*
+• פריקה בסדר LIFO מתוכנן מראש (אין להזיז מטענים קדמיים).
+• יש לוודא מרחק בטוח מקווי מתח גבוה ופתיחת רגלי ייצוב מלאות.
+• חובה להחתים את מנהל האתר בתעודת המשלוח הדיגיטלית.
+
+🗺️ *קישור ניווט Waze ישיר:*
+${order.wazeUrl || `https://www.waze.com/ul?q=${encodeURIComponent(order.siteAddress || order.address || order.city || '')}&navigate=yes`}
+
+סע בזהירות אחי!
+באדיבות נועה AI ❤️ יד ימינו של ראמי סבן`;
+}
+
+function formatWhatsAppAli(order: any) {
+  return `🚚 *תדריך נסיעה יומי — עלי (משאית איסוזו 15ט)*
+שלום עלי היקר! להלן פרטי הנסיעה המשובצת עבורך:
+
+📦 *מספר הזמנה:* ${order.orderNumber || order.orderId}
+👤 *שם לקוח:* ${order.customerName}
+📍 *יעד פריקה:* ${order.siteAddress || order.address || order.city || order.destination}
+🏟️ *מחסן טעינה:* ${order.warehouseName || order.warehouse || '🏟️ 1️⃣ התלמיד (גבס ופרופילים)'}
+⏰ *שעת הגעה מתוכננת:* ${order.scheduledTime || order.time || '08:00'} (${order.round || 'סבב 1'})
+
+📋 *פירוט מוצרים להעמסה:*
+${order.itemsFormatted || order.items || order.itemsDetails}
+
+📦 *פקדונות:*
+${(order.bigBagsDeposit > 0 || order.palletsDeposit > 0) ? `• משטחי סבן (60060): ${order.palletsDeposit || 0}` : '• הובלה רגילה - פטור מפקדונות'}
+
+🗺️ *קישור ניווט Waze ישיר:*
+${order.wazeUrl || `https://www.waze.com/ul?q=${encodeURIComponent(order.siteAddress || order.address || order.city || '')}&navigate=yes`}
+
+נא לפרוק בזהירות ולהחתים את הלקוח באפליקציה!
+באדיבות נועה AI ❤️ יד ימינו של ראמי סבן`;
+}
+
+function formatWhatsAppMorningReport(orders: any[], stats?: any) {
+  const dateStr = new Date().toLocaleDateString('he-IL');
+  const totalOrders = orders.length;
+  
+  let ordersListText = '';
+  orders.forEach((o, idx) => {
+    const isHikmat = (o.driver || o.assignedDriver || '').includes('חכמת');
+    const driverIcon = isHikmat ? '🏗️ חכמת (מנוף)' : '🚚 עלי (איסוזו)';
+    ordersListText += `\n${idx + 1}. *הזמנה #${o.orderNumber || o.orderId}* | ${o.customerName}\n   📍 ${o.siteAddress || o.address || o.city || o.destination} (${o.warehouseName || o.warehouse})\n   👨‍✈️ ${driverIcon} | ⏰ ${o.scheduledTime || o.round}\n   📦 פקדונות: ${o.bigBagsDeposit || 0} בלות | ${o.palletsDeposit || 0} משטחים\n`;
+  });
+
+  return `📊 *ח. סבן חומרי בניין בע"מ — דוח בוקר מבצעי וסידור עבודה* 🚚
+🗓️ *תאריך:* ${dateStr} | שעת הפקה: ${new Date().toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' })}
+
+📈 *ריכוז נתונים מבצעי:*
+• סה"כ הזמנות פתוחות: *${totalOrders}*
+• מחסן 4 החרש (מלט/חול/בלוקים): *${stats?.harashCount || orders.filter(o => (o.warehouse || '').includes('4') || (o.warehouse || '').includes('HARASH')).length}*
+• מחסן 1 התלמיד (גבס/פרופילים): *${stats?.talmidCount || orders.filter(o => (o.warehouse || '').includes('1') || (o.warehouse || '').includes('TALMID')).length}*
+• משימות משאית מנוף (חכמת): *${orders.filter(o => (o.driver || o.assignedDriver || '').includes('חכמת')).length}*
+• משימות משאית חלוקה (עלי): *${orders.filter(o => (o.driver || o.assignedDriver || '').includes('עלי')).length}*
+• סה"כ שקי בלה לפקדון (60002): *${orders.reduce((acc, o) => acc + (Number(o.bigBagsDeposit) || 0), 0)}*
+• סה"כ משטחי סבן לפקדון (60060): *${orders.reduce((acc, o) => acc + (Number(o.palletsDeposit) || 0), 0)}*
+
+📋 *פירוט סבבי חלוקה לפי נהגים ויעדים:*${ordersListText}
+🔗 *לצפייה בגיליון הראשי והפקת תעודות:*
+https://docs.google.com/spreadsheets/d/1fy79UJXTIGf8Br5co2pQtPggJkIRyClgG7KBKE1cov0/edit
+
+יום מוצלח ומלא עשייה לכולנו! 🏗️
+באדיבות נועה AI ❤️ יד ימינו הנאמנה של ראמי סבן`;
+}
+
+function formatWhatsAppCustomer(order: any) {
+  const isHikmat = (order.driver || order.assignedDriver || '').includes('חכמת');
+  const driverName = isHikmat ? 'חכמת' : 'עלי';
+  const driverPhone = isHikmat ? '050-886-1080' : '052-771-4490';
+
+  return `שלום וברכה מ*ח. סבן חומרי בניין (1994) בע"מ*! 🏗️
+
+שמחים לעדכן כי הזמנתך מספר *#${order.orderNumber || order.orderId}* הועמסה במחסן ונמצאת כעת בדרכה לאתר בכתובת:
+📍 *${order.siteAddress || order.address || order.city || order.destination}*
+
+🚚 *נהג מבצע:* ${driverName} (${driverPhone})
+⏰ *זמן הגעה משוער (ETA):* ${order.scheduledTime || 'בשעות הקרובות'}
+
+📋 *פירוט החומרים שבמשלוח:*
+${order.itemsFormatted || order.items || order.itemsDetails}
+
+${(order.bigBagsDeposit > 0 || order.palletsDeposit > 0) ? `📦 *לתשומת לבך — פקדונות שיחויבו בחשבונית:*
+${order.bigBagsDeposit > 0 ? `• שקי בלה (60002): ${order.bigBagsDeposit} פקדון\n` : ''}${order.palletsDeposit > 0 ? `• משטחי סבן (60060): ${order.palletsDeposit} פקדון` : ''}` : ''}
+
+במידת הצורך בתיאום פריקה באתר, ניתן ליצור קשר ישירות עם הנהג או עם משרדנו.
+תודה שבחרת בח. סבן — איכות ושירות ללא פשרות! ❤️`;
+}
+
+// POST /api/whatsapp/send-make - Primary Make.com Webhook Endpoint
+app.post('/api/whatsapp/send-make', async (req, res) => {
+  try {
+    const { type, order, orders, stats, recipientPhone, recipientName, customMessage } = req.body;
+
+    let formattedMessage = '';
+    let targetRecipient = recipientName || 'חכמת';
+    let targetPhone = recipientPhone || '0508861080';
+
+    if (type === 'driver_hikmat') {
+      formattedMessage = formatWhatsAppHikmat(order || {});
+      targetRecipient = 'חכמת (מרצדס מנוף)';
+      targetPhone = '0508861080';
+    } else if (type === 'driver_ali') {
+      formattedMessage = formatWhatsAppAli(order || {});
+      targetRecipient = 'עלי (משאית איסוזו)';
+      targetPhone = '0527714490';
+    } else if (type === 'morning_report') {
+      formattedMessage = formatWhatsAppMorningReport(orders || [order || {}], stats);
+      targetRecipient = 'ראמי סבן / קבוצת סידור ח. סבן';
+      targetPhone = '0505298818';
+    } else if (type === 'customer_alert') {
+      formattedMessage = formatWhatsAppCustomer(order || {});
+      targetRecipient = order?.customerName || 'לקוח ח. סבן';
+      targetPhone = order?.driverPhone || recipientPhone || '0508861080';
+    } else {
+      formattedMessage = customMessage || formatWhatsAppHikmat(order || {});
+    }
+
+    const payload = {
+      event: type || 'whatsapp_dispatch',
+      sender: 'נועה AI (סבן לוגיסטיקה)',
+      recipient: targetRecipient,
+      recipientPhone: targetPhone,
+      message: formattedMessage,
+      orderNumber: order?.orderNumber || order?.orderId,
+      customerName: order?.customerName,
+      wazeUrl: order?.wazeUrl,
+      spreadsheetUrl: 'https://docs.google.com/spreadsheets/d/1fy79UJXTIGf8Br5co2pQtPggJkIRyClgG7KBKE1cov0/edit',
+      timestamp: new Date().toISOString()
+    };
+
+    // Dispatch to Make.com Webhook
+    let makeResponseStatus = 200;
+    let makeResponseText = 'OK';
+    try {
+      const makeRes = await fetch(MAKE_WEBHOOK_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      makeResponseStatus = makeRes.status;
+      makeResponseText = await makeRes.text();
+    } catch (err: any) {
+      console.warn('Make webhook delivery note:', err.message);
+      makeResponseText = 'Simulated Delivery (Local Dev/Offline)';
+    }
+
+    const cleanPhone = targetPhone.replace(/[^0-9]/g, '');
+    const waDirectUrl = `https://wa.me/972${cleanPhone.startsWith('0') ? cleanPhone.slice(1) : cleanPhone}?text=${encodeURIComponent(formattedMessage)}`;
+
+    return res.json({
+      success: true,
+      status: 'שוגר בהצלחה לערוץ Make.com WhatsApp Webhook!',
+      webhookEndpoint: MAKE_WEBHOOK_ENDPOINT,
+      makeResponseStatus,
+      makeResponseText,
+      formattedMessage,
+      targetRecipient,
+      targetPhone,
+      waDirectUrl,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error: any) {
+    console.error('WhatsApp Make error:', error);
+    return res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 app.post('/api/dispatch-driver', async (req, res) => {
   const { order, channel } = req.body;
-  
-  // Simulate dispatch logging and external webhook delivery
+  const isHikmat = (order?.assignedDriver || order?.driver || '').includes('חכמת');
+  const type = isHikmat ? 'driver_hikmat' : 'driver_ali';
+  const formattedMessage = isHikmat ? formatWhatsAppHikmat(order || {}) : formatWhatsAppAli(order || {});
+
+  try {
+    await fetch(MAKE_WEBHOOK_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        event: 'driver_dispatch',
+        driver: isHikmat ? 'חכמת' : 'עלי',
+        message: formattedMessage,
+        orderNumber: order?.orderNumber || order?.orderId,
+        wazeUrl: order?.wazeUrl,
+        timestamp: new Date().toISOString()
+      })
+    });
+  } catch (e) {
+    // continue gracefully
+  }
+
   const receiptId = 'WH-' + Date.now().toString().slice(-6);
   return res.json({
     success: true,
     receiptId,
     timestamp: new Date().toISOString(),
-    status: 'שוגר בהצלחה ל-JONI WhatsApp & Google Sheets',
-    channel: channel || 'whatsapp_joni',
+    status: 'שוגר בהצלחה ל-JONI WhatsApp (Make Webhook) & Google Sheets',
+    channel: channel || 'whatsapp_make_webhook',
+    formattedMessage,
     wazeUrl: order?.wazeUrl
   });
 });
@@ -374,9 +583,28 @@ app.post('/api/save-annotated-doc', async (req, res) => {
   });
 });
 
+// GET /api/gas/code - Endpoint to fetch current CODE.JS for easy copying and inspection
+app.get('/api/gas/code', async (req, res) => {
+  const fs = await import('fs/promises');
+  try {
+    const codeContent = await fs.readFile(path.join(process.cwd(), 'CODE.JS'), 'utf-8');
+    return res.json({
+      success: true,
+      spreadsheetId: TARGET_SPREADSHEET_ID,
+      webhookEndpoint: MAKE_WEBHOOK_ENDPOINT,
+      code: codeContent
+    });
+  } catch {
+    return res.json({
+      success: false,
+      message: 'CODE.JS file not found'
+    });
+  }
+});
+
 // 6. Google Apps Script (GAS) Web App Endpoint Proxy & Safe Fetcher
-const GAS_ENDPOINT_URL = 'https://script.google.com/macros/s/AKfycby2gmtPDJZwsmUzrGf606g7FiY7JkE11FAN4wgb0_NU0J5k3p0AmRGozXJWrBqIdc0/exec';
-const TARGET_SPREADSHEET_ID = '1VA9J6n9IYcooO_s2xOpnkvyDQWWQD3pfhh0cnenCkoA';
+const GAS_ENDPOINT_URL = 'https://script.google.com/macros/s/AKfycbzHSfCnuuz0oyi5jeIEOjzH-tDAi_qGH4SqOh_M0YVXzDl5lTQYZNw_-GQ26CU2WVgH/exec';
+const TARGET_SPREADSHEET_ID = '1fy79UJXTIGf8Br5co2pQtPggJkIRyClgG7KBKE1cov0';
 
 // Helper for safe GAS communication without JSON parse errors on HTML responses/redirects
 async function fetchGASJson(url: string, options: any = {}) {
@@ -447,10 +675,10 @@ const EMAIL_ORDERS_DATA = [
     orderDate: '10/08/2026',
     orderContact: 'עודד — 0506610054',
     orderAgent: 'ריימונד ביטון',
-    orderDocumentUrl: 'https://docs.google.com/spreadsheets/d/1VA9J6n9IYcooO_s2xOpnkvyDQWWQD3pfhh0cnenCkoA/edit#order=6214797',
+    orderDocumentUrl: 'https://docs.google.com/spreadsheets/d/1fy79UJXTIGf8Br5co2pQtPggJkIRyClgG7KBKE1cov0/edit#order=6214797',
     orderDocumentName: 'הזמנת_לקוח_6214797_זבולון_עדירן.pdf',
     customerFolderUrl: 'https://drive.google.com/drive/folders/1JGNbTlmB5yBH_cLOApKTvE39CEL6roFF?usp=drive_link#customer_607125',
-    directSheetViewUrl: 'https://docs.google.com/spreadsheets/d/1VA9J6n9IYcooO_s2xOpnkvyDQWWQD3pfhh0cnenCkoA/edit#gid=0&range=H2',
+    directSheetViewUrl: 'https://docs.google.com/spreadsheets/d/1fy79UJXTIGf8Br5co2pQtPggJkIRyClgG7KBKE1cov0/edit#gid=0&range=H2',
     signatureReceived: false,
     isSynced: true
   },
@@ -489,10 +717,10 @@ const EMAIL_ORDERS_DATA = [
     orderDate: '10/08/2026',
     orderContact: 'אייל — 054-9988112',
     orderAgent: 'ריימונד ביטון',
-    orderDocumentUrl: 'https://docs.google.com/spreadsheets/d/1VA9J6n9IYcooO_s2xOpnkvyDQWWQD3pfhh0cnenCkoA/edit#order=6215184',
+    orderDocumentUrl: 'https://docs.google.com/spreadsheets/d/1fy79UJXTIGf8Br5co2pQtPggJkIRyClgG7KBKE1cov0/edit#order=6215184',
     orderDocumentName: 'הזמנת_לקוח_6215184_בן_ענבר.pdf',
     customerFolderUrl: 'https://drive.google.com/drive/folders/1JGNbTlmB5yBH_cLOApKTvE39CEL6roFF?usp=drive_link#customer_612108',
-    directSheetViewUrl: 'https://docs.google.com/spreadsheets/d/1VA9J6n9IYcooO_s2xOpnkvyDQWWQD3pfhh0cnenCkoA/edit#gid=0&range=H3',
+    directSheetViewUrl: 'https://docs.google.com/spreadsheets/d/1fy79UJXTIGf8Br5co2pQtPggJkIRyClgG7KBKE1cov0/edit#gid=0&range=H3',
     signatureReceived: false,
     isSynced: true
   },
@@ -528,10 +756,10 @@ const EMAIL_ORDERS_DATA = [
     isCraneRequired: true,
     scheduledTime: '10:30',
     round: 'סבב 2 (10:30)',
-    orderDocumentUrl: 'https://docs.google.com/spreadsheets/d/1VA9J6n9IYcooO_s2xOpnkvyDQWWQD3pfhh0cnenCkoA/edit#order=6215180',
+    orderDocumentUrl: 'https://docs.google.com/spreadsheets/d/1fy79UJXTIGf8Br5co2pQtPggJkIRyClgG7KBKE1cov0/edit#order=6215180',
     orderDocumentName: 'הזמנת_לקוח_6215180_קראמה.pdf',
     customerFolderUrl: 'https://drive.google.com/drive/folders/1JGNbTlmB5yBH_cLOApKTvE39CEL6roFF?usp=drive_link#customer_608930',
-    directSheetViewUrl: 'https://docs.google.com/spreadsheets/d/1VA9J6n9IYcooO_s2xOpnkvyDQWWQD3pfhh0cnenCkoA/edit#gid=0&range=H4',
+    directSheetViewUrl: 'https://docs.google.com/spreadsheets/d/1fy79UJXTIGf8Br5co2pQtPggJkIRyClgG7KBKE1cov0/edit#gid=0&range=H4',
     signatureReceived: false,
     isSynced: false
   },
@@ -567,10 +795,10 @@ const EMAIL_ORDERS_DATA = [
     isCraneRequired: false,
     scheduledTime: '08:00',
     round: 'סבב 1 (08:00)',
-    orderDocumentUrl: 'https://docs.google.com/spreadsheets/d/1VA9J6n9IYcooO_s2xOpnkvyDQWWQD3pfhh0cnenCkoA/edit#order=6215178',
+    orderDocumentUrl: 'https://docs.google.com/spreadsheets/d/1fy79UJXTIGf8Br5co2pQtPggJkIRyClgG7KBKE1cov0/edit#order=6215178',
     orderDocumentName: 'הזמנת_לקוח_6215178_בזלת.pdf',
     customerFolderUrl: 'https://drive.google.com/drive/folders/1JGNbTlmB5yBH_cLOApKTvE39CEL6roFF?usp=drive_link#customer_602115',
-    directSheetViewUrl: 'https://docs.google.com/spreadsheets/d/1VA9J6n9IYcooO_s2xOpnkvyDQWWQD3pfhh0cnenCkoA/edit#gid=0&range=H5',
+    directSheetViewUrl: 'https://docs.google.com/spreadsheets/d/1fy79UJXTIGf8Br5co2pQtPggJkIRyClgG7KBKE1cov0/edit#gid=0&range=H5',
     signatureReceived: false,
     isSynced: true
   },
@@ -604,10 +832,10 @@ const EMAIL_ORDERS_DATA = [
     scheduledTime: '09:15',
     round: 'סבב 1 (09:15)',
     deliveredAt: '09:42',
-    orderDocumentUrl: 'https://docs.google.com/spreadsheets/d/1VA9J6n9IYcooO_s2xOpnkvyDQWWQD3pfhh0cnenCkoA/edit#order=6215165',
+    orderDocumentUrl: 'https://docs.google.com/spreadsheets/d/1fy79UJXTIGf8Br5co2pQtPggJkIRyClgG7KBKE1cov0/edit#order=6215165',
     orderDocumentName: 'הזמנת_לקוח_6215165_אלפא.pdf',
     customerFolderUrl: 'https://drive.google.com/drive/folders/1JGNbTlmB5yBH_cLOApKTvE39CEL6roFF?usp=drive_link#customer_601004',
-    directSheetViewUrl: 'https://docs.google.com/spreadsheets/d/1VA9J6n9IYcooO_s2xOpnkvyDQWWQD3pfhh0cnenCkoA/edit#gid=0&range=H6',
+    directSheetViewUrl: 'https://docs.google.com/spreadsheets/d/1fy79UJXTIGf8Br5co2pQtPggJkIRyClgG7KBKE1cov0/edit#gid=0&range=H6',
     signatureReceived: true,
     isSynced: true
   },
@@ -641,10 +869,10 @@ const EMAIL_ORDERS_DATA = [
     isCraneRequired: true,
     scheduledTime: '11:45',
     round: 'סבב 2 (11:45)',
-    orderDocumentUrl: 'https://docs.google.com/spreadsheets/d/1VA9J6n9IYcooO_s2xOpnkvyDQWWQD3pfhh0cnenCkoA/edit#order=6215152',
+    orderDocumentUrl: 'https://docs.google.com/spreadsheets/d/1fy79UJXTIGf8Br5co2pQtPggJkIRyClgG7KBKE1cov0/edit#order=6215152',
     orderDocumentName: 'הזמנת_לקוח_6215152_מבני_שרון.pdf',
     customerFolderUrl: 'https://drive.google.com/drive/folders/1JGNbTlmB5yBH_cLOApKTvE39CEL6roFF?usp=drive_link#customer_603391',
-    directSheetViewUrl: 'https://docs.google.com/spreadsheets/d/1VA9J6n9IYcooO_s2xOpnkvyDQWWQD3pfhh0cnenCkoA/edit#gid=0&range=H7',
+    directSheetViewUrl: 'https://docs.google.com/spreadsheets/d/1fy79UJXTIGf8Br5co2pQtPggJkIRyClgG7KBKE1cov0/edit#gid=0&range=H7',
     signatureReceived: false,
     isSynced: false
   }

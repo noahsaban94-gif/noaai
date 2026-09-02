@@ -624,7 +624,7 @@ export const OrderCardModal: React.FC<OrderCardModalProps> = ({
                 </a>
 
                 <a
-                  href={`https://docs.google.com/spreadsheets/d/1VA9J6n9IYcooO_s2xOpnkvyDQWWQD3pfhh0cnenCkoA/edit#gid=0&order=${order.orderNumber}`}
+                  href={`https://docs.google.com/spreadsheets/d/1fy79UJXTIGf8Br5co2pQtPggJkIRyClgG7KBKE1cov0/edit#gid=0&order=${order.orderNumber}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className={`px-3.5 py-2 rounded-xl border text-xs font-black transition flex items-center gap-1.5 shadow-sm ${

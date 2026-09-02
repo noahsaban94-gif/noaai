@@ -86,7 +86,7 @@ export const LogisticsDictionaryView: React.FC<LogisticsDictionaryViewProps> = (
     try {
       const res = await fetch('/api/gas/dictionary');
       const data = await res.json();
-      setSyncStatusText(`✓ סונכרן בהצלחה מול גיליון 1VA9J6n9IYcooO_s2xOpnkvyDQWWQD3pfhh0cnenCkoA (טאב מילון_לוגיסטי)`);
+      setSyncStatusText(`✓ סונכרן בהצלחה מול גיליון 1fy79UJXTIGf8Br5co2pQtPggJkIRyClgG7KBKE1cov0 (טאב מילון_לוגיסטי)`);
     } catch (e) {
       setSyncStatusText('✓ מחובר למאגר מק"טים פעיל מול הגיליון');
     } finally {
@@ -95,7 +95,7 @@ export const LogisticsDictionaryView: React.FC<LogisticsDictionaryViewProps> = (
     }
   };
 
-  const spreadsheetId = '1VA9J6n9IYcooO_s2xOpnkvyDQWWQD3pfhh0cnenCkoA';
+  const spreadsheetId = '1fy79UJXTIGf8Br5co2pQtPggJkIRyClgG7KBKE1cov0';
   const sheetUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/edit#gid=0`;
 
   // Group items by category for catalog view
@@ -116,7 +116,7 @@ export const LogisticsDictionaryView: React.FC<LogisticsDictionaryViewProps> = (
             </span>
             <span className="text-xs text-emerald-400 font-mono flex items-center gap-1">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span>מחובר חי לגיליון: 1VA9J6n9IYcooO_s2xOpnkvyDQWWQD3pfhh0cnenCkoA</span>
+              <span>מחובר חי לגיליון: 1fy79UJXTIGf8Br5co2pQtPggJkIRyClgG7KBKE1cov0</span>
             </span>
           </div>
           <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight flex items-center gap-2">

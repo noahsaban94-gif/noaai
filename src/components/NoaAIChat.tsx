@@ -725,7 +725,7 @@ export const NoaAIChat: React.FC<NoaAIChatProps> = ({
                   : 'bg-[#182229] border-[#222e35] text-[#ffd279] shadow-black/40'
               }`}>
                 <ShieldCheck className="w-4 h-4 text-amber-600 dark:text-[#ffd279] shrink-0" />
-                <span>הודעות מוגנות ומסונכרנות ישירות מול גיליון הליבה 1VA9J6n... של ח. סבן חומרי בניין בע״מ</span>
+                <span>הודעות מוגנות ומסונכרנות ישירות מול גיליון הליבה 1fy79UJ... של ח. סבן חומרי בניין בע״מ</span>
               </div>
             </div>
 

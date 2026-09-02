@@ -17,7 +17,12 @@ import {
   Package,
   Layers,
   Sparkles,
-  TrendingUp
+  TrendingUp,
+  MessageSquare,
+  UserCheck,
+  Eye,
+  Copy,
+  ExternalLink
 } from 'lucide-react';
 import { Order } from '../types';
 import { SABAN_DRIVERS } from '../data/mockData';
@@ -44,6 +49,9 @@ export const MorningDispatch: React.FC<MorningDispatchProps> = ({
   const [playingOrderId, setPlayingOrderId] = useState<string | null>(null);
   const [audioLoading, setAudioLoading] = useState<boolean>(false);
   const [activeDriverFilter, setActiveDriverFilter] = useState<string>('all');
+  const [isSendingMakeReport, setIsSendingMakeReport] = useState<boolean>(false);
+  const [makeSuccessBanner, setMakeSuccessBanner] = useState<string | null>(null);
+  const [previewModal, setPreviewModal] = useState<{ title: string; content: string; waUrl?: string } | null>(null);
 
   const filteredOrders = orders.filter(order => {
     if (activeDriverFilter === 'all') return true;
@@ -80,7 +88,6 @@ export const MorningDispatch: React.FC<MorningDispatchProps> = ({
         audio.play();
         audio.onended = () => setPlayingOrderId(null);
       } else {
-        // Fallback Web Speech API if offline
         if ('speechSynthesis' in window) {
           const utterance = new SpeechSynthesisUtterance(briefingText);
           utterance.lang = 'he-IL';
@@ -96,8 +103,94 @@ export const MorningDispatch: React.FC<MorningDispatchProps> = ({
     }
   };
 
+  // Trigger full Morning Report to Make.com Webhook
+  const handleSendFullMorningReportMake = async () => {
+    try {
+      setIsSendingMakeReport(true);
+      const res = await fetch('/api/whatsapp/send-make', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'morning_report',
+          orders: orders,
+          stats: {
+            totalOrders: orders.length,
+            harashCount: orders.filter(o => o.warehouse.includes('4') || o.warehouse.includes('HARASH')).length,
+            talmidCount: orders.filter(o => o.warehouse.includes('1') || o.warehouse.includes('TALMID')).length
+          }
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setMakeSuccessBanner('✓ דוח הבוקר המבצעי שודר בהצלחה לוואטסאפ של ראמי דרך Make.com Webhook!');
+        setTimeout(() => setMakeSuccessBanner(null), 7000);
+      }
+    } catch (err: any) {
+      alert('שגיאה בשידור: ' + err.message);
+    } finally {
+      setIsSendingMakeReport(false);
+    }
+  };
+
+  // Trigger Driver Dispatch via Make.com
+  const handleSendDriverMake = async (order: Order) => {
+    const isHikmat = order.assignedDriver.includes('חכמת');
+    try {
+      const res = await fetch('/api/whatsapp/send-make', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: isHikmat ? 'driver_hikmat' : 'driver_ali',
+          order: order
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setMakeSuccessBanner(`✓ תדריך משימה שודר בהצלחה ל${isHikmat ? 'חכמת (מרצדס מנוף)' : 'עלי (איסוזו)'} דרך Make!`);
+        setTimeout(() => setMakeSuccessBanner(null), 6000);
+      }
+    } catch (err) {
+      onSendWhatsApp(order);
+    }
+  };
+
+  // Trigger Customer Alert via Make.com
+  const handleSendCustomerAlert = async (order: Order) => {
+    try {
+      const res = await fetch('/api/whatsapp/send-make', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'customer_alert',
+          order: order
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setPreviewModal({
+          title: `עדכון יציאה לאתר — ${order.customerName}`,
+          content: data.formattedMessage,
+          waUrl: data.waDirectUrl
+        });
+      }
+    } catch (e: any) {
+      alert('שגיאה ביצירת הודעת לקוח: ' + e.message);
+    }
+  };
+
   return (
     <div className="space-y-6">
+      {/* Alert Banner if dispatched */}
+      {makeSuccessBanner && (
+        <div className="p-4 rounded-xl bg-emerald-950/90 border border-emerald-500/50 text-emerald-200 text-sm flex items-center justify-between shadow-lg animate-fade-in">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+            <span>{makeSuccessBanner}</span>
+          </div>
+          <button onClick={() => setMakeSuccessBanner(null)} className="text-xs text-emerald-400 underline">סגור</button>
+        </div>
+      )}
+
       {/* Top Banner with Operational Overview */}
       <div className="rounded-2xl bg-gradient-to-r from-slate-900 via-slate-900 to-cyan-950/60 border border-cyan-900/40 p-5 shadow-xl">
         <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
@@ -108,27 +201,38 @@ export const MorningDispatch: React.FC<MorningDispatchProps> = ({
                 דוח בוקר מבצעי פעיל
               </span>
               <span className="text-xs text-slate-400 font-mono">
-                טאב: 'דוח_בוקר_מבצעי' (Google Sheets)
+                גיליון 1fy79UJXTIGf8Br5co2pQtPggJkIRyClgG7KBKE1cov0
               </span>
             </div>
             <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
-              סידור עבודה ושיגור נהגים יומי
+              סידור עבודה ושיגור נהגים יומי (נועה AI)
             </h2>
             <p className="text-xs sm:text-sm text-slate-300 mt-1 max-w-2xl">
-              משימות פתוחות, שיבוצי משאיות, קישורי ניווט Waze, תדריכים קוליים וסנכרון תעודות מול מחסני סבן.
+              משימות פתוחות, שיבוצי משאיות, קישורי ניווט Waze, תדריכים קוליים ושידור ישיר ל-WhatsApp דרך Make.com Webhook.
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-2 self-stretch sm:self-auto">
+            {/* Make.com Full Morning Report WhatsApp Dispatch */}
+            <button
+              onClick={handleSendFullMorningReportMake}
+              disabled={isSendingMakeReport}
+              id="send-make-morning-report-btn"
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-lg shadow-emerald-950 transition active:scale-95"
+            >
+              <Send className={`w-4 h-4 ${isSendingMakeReport ? 'animate-spin' : ''}`} />
+              <span>{isSendingMakeReport ? 'משדר ל-Make.com...' : '📲 שדר דוח בוקר ל-WhatsApp (Make)'}</span>
+            </button>
+
             {/* View Route Density D3 Map Button */}
             {onNavigateTab && (
               <button
                 onClick={() => onNavigateTab('route-density')}
                 id="view-route-density-btn"
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 text-xs font-semibold transition shadow-sm"
+                className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 text-xs font-semibold transition shadow-sm"
               >
                 <TrendingUp className="w-4 h-4 text-cyan-400" />
-                <span>מפת צפיפות ומסלולים D3</span>
+                <span>מפת צפיפות ומסלולים</span>
               </button>
             )}
 
@@ -137,10 +241,10 @@ export const MorningDispatch: React.FC<MorningDispatchProps> = ({
               onClick={onArchiveReport}
               disabled={isArchiving}
               id="archive-morning-report-btn"
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-semibold transition shadow-sm"
+              className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-semibold transition shadow-sm"
             >
               <Lock className={`w-4 h-4 ${isArchiving ? 'animate-spin' : ''}`} />
-              <span>{isArchiving ? 'נועל ושומר בארכיון...' : 'נעילת דוח בוקר וארכוב'}</span>
+              <span>{isArchiving ? 'נועל ושומר...' : 'נעילת דוח וארכוב'}</span>
             </button>
           </div>
         </div>
@@ -166,87 +270,80 @@ export const MorningDispatch: React.FC<MorningDispatchProps> = ({
         </div>
       </div>
 
-      {/* Driver Filters */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-1">
-        <span className="text-xs text-slate-400 font-medium whitespace-nowrap">סינון לפי נהג:</span>
+      {/* Driver Filtering Tabs */}
+      <div className="flex items-center gap-2 border-b border-slate-800 pb-2 overflow-x-auto">
         <button
           onClick={() => setActiveDriverFilter('all')}
-          className={`px-3 py-1.5 rounded-lg text-xs font-medium transition whitespace-nowrap ${
+          className={`px-4 py-2 rounded-xl text-xs font-semibold transition whitespace-nowrap ${
             activeDriverFilter === 'all'
-              ? 'bg-slate-700 text-white'
+              ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20'
               : 'bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800'
           }`}
         >
           כל הנהגים ({orders.length})
         </button>
-        {SABAN_DRIVERS.map((driver) => (
-          <button
-            key={driver.id}
-            onClick={() => setActiveDriverFilter(driver.id)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition whitespace-nowrap ${
-              activeDriverFilter === driver.id
-                ? 'bg-cyan-600 text-white'
-                : 'bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800'
-            }`}
-          >
-            {driver.name} — {driver.truckModel} ({driver.truckPlate})
-          </button>
-        ))}
+        <button
+          onClick={() => setActiveDriverFilter('hikmat')}
+          className={`px-4 py-2 rounded-xl text-xs font-semibold transition whitespace-nowrap flex items-center gap-1.5 ${
+            activeDriverFilter === 'hikmat'
+              ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20'
+              : 'bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800'
+          }`}
+        >
+          <span>🏗️ חכמת (מרצדס מנוף 26ט)</span>
+          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-slate-800 text-cyan-300 font-mono">
+            {orders.filter(o => o.assignedDriver.includes('חכמת')).length}
+          </span>
+        </button>
+        <button
+          onClick={() => setActiveDriverFilter('ali')}
+          className={`px-4 py-2 rounded-xl text-xs font-semibold transition whitespace-nowrap flex items-center gap-1.5 ${
+            activeDriverFilter === 'ali'
+              ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20'
+              : 'bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800'
+          }`}
+        >
+          <span>🚚 עלי (משאית איסוזו 15ט)</span>
+          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-slate-800 text-cyan-300 font-mono">
+            {orders.filter(o => o.assignedDriver.includes('עלי')).length}
+          </span>
+        </button>
       </div>
 
-      {/* Morning Orders Task List */}
+      {/* Orders List */}
       <div className="space-y-4">
         {filteredOrders.map((order, index) => {
-          const isCompleted = order.status === 'סופק בהצלחה';
           const isHikmat = order.assignedDriver.includes('חכמת');
-
           return (
             <div
               key={order.orderNumber}
-              id={`morning-task-${order.orderNumber}`}
-              className={`rounded-2xl border transition-all duration-200 p-5 shadow-md ${
-                isCompleted 
-                  ? 'bg-slate-900/40 border-slate-800/60 opacity-80' 
-                  : 'bg-slate-900/90 border-slate-800 hover:border-cyan-800/80'
-              }`}
+              className="rounded-2xl bg-slate-900/90 border border-slate-800 hover:border-slate-700 p-5 transition shadow-lg relative overflow-hidden"
             >
-              <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 pb-4 border-b border-slate-800/70">
-                {/* Order Identification & Round */}
-                <div className="space-y-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="px-2.5 py-0.5 rounded-md bg-cyan-950 border border-cyan-800 text-cyan-300 font-mono text-xs font-semibold">
-                      {order.round || `סבב ${index + 1}`}
-                    </span>
-                    <span className="text-xs font-mono text-slate-400">
-                      הזמנה #{order.orderNumber}
-                    </span>
-                    <span className="text-xs text-slate-400">
-                      (לקוח: <span className="font-mono text-slate-300">{order.customerNumber}</span>)
-                    </span>
-                    {order.isCraneRequired && (
-                      <span className="px-2 py-0.5 rounded-md bg-amber-950/70 border border-amber-800/70 text-amber-300 text-[11px] font-medium flex items-center gap-1">
-                        🏗️ דורש מנוף
-                      </span>
-                    )}
-                  </div>
-                  <h3 className="text-lg font-bold text-white flex items-center gap-2">
+              {/* Top Row: Round, Order ID, Warehouse Tag, Destination */}
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pb-3 border-b border-slate-800/80">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-cyan-950 text-cyan-300 border border-cyan-800">
+                    {order.round || `סבב ${index + 1}`}
+                  </span>
+                  <span className="text-base font-bold text-white font-mono">
+                    #{order.orderNumber}
+                  </span>
+                  <span className="text-sm font-semibold text-slate-200 mr-2">
                     {order.customerName}
-                  </h3>
-                  <div className="flex flex-wrap items-center gap-3 text-xs text-slate-300">
-                    <span className="flex items-center gap-1 text-slate-300">
-                      <MapPin className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
-                      {order.siteAddress} ({order.city})
-                    </span>
-                    <span className="text-slate-600">•</span>
-                    <span className="flex items-center gap-1 text-slate-300">
-                      <Layers className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                      {order.warehouseName}
-                    </span>
-                    <span className="text-slate-600">•</span>
-                    <span className="flex items-center gap-1 text-slate-300">
-                      <Clock className="w-3.5 h-3.5 text-purple-400 shrink-0" />
-                      שעת יעד: <span className="font-mono font-semibold">{order.scheduledTime}</span>
-                    </span>
+                  </span>
+                  <span className="text-xs px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
+                    {order.warehouseName}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-3 text-xs text-slate-300">
+                  <div className="flex items-center gap-1">
+                    <MapPin className="w-3.5 h-3.5 text-rose-400" />
+                    <span>{order.siteAddress}, {order.city}</span>
+                  </div>
+                  <div className="flex items-center gap-1 font-mono text-cyan-400 mr-3">
+                    <Clock className="w-3.5 h-3.5" />
+                    <span>{order.scheduledTime}</span>
                   </div>
                 </div>
 
@@ -315,7 +412,7 @@ export const MorningDispatch: React.FC<MorningDispatchProps> = ({
                 </div>
               </div>
 
-              {/* Action Buttons: Waze, WhatsApp, Audio TTS, OneSignal Push */}
+              {/* Action Buttons: Waze, WhatsApp Make, Customer Alert, Audio TTS, OneSignal Push */}
               <div className="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-slate-800/70">
                 <div className="flex flex-wrap items-center gap-2">
                   {/* Waze Direct Navigation */}
@@ -329,13 +426,24 @@ export const MorningDispatch: React.FC<MorningDispatchProps> = ({
                     <span>נווט ב-Waze</span>
                   </a>
 
-                  {/* Send WhatsApp to Driver */}
+                  {/* Send WhatsApp via Make to Driver */}
                   <button
-                    onClick={() => onSendWhatsApp(order)}
-                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-950/80 hover:bg-emerald-900/80 text-emerald-300 border border-emerald-800 text-xs font-semibold transition"
+                    onClick={() => handleSendDriverMake(order)}
+                    className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition shadow-md shadow-emerald-950/40"
+                    title="משדר תדריך מלא ל-Make.com Webhook ישירות לוואטסאפ של הנהג"
                   >
                     <Send className="w-3.5 h-3.5" />
-                    <span>שיגור תדריך WhatsApp</span>
+                    <span>📲 שדר לנהג (Make)</span>
+                  </button>
+
+                  {/* Customer Alert via WhatsApp */}
+                  <button
+                    onClick={() => handleSendCustomerAlert(order)}
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold transition"
+                    title="יוצר הודעת עדכון ללקוח שההזמנה יצאה לאתר"
+                  >
+                    <MessageSquare className="w-3.5 h-3.5 text-cyan-400" />
+                    <span>הודעה ללקוח</span>
                   </button>
 
                   {/* Push Notification to Driver PWA */}
@@ -375,6 +483,57 @@ export const MorningDispatch: React.FC<MorningDispatchProps> = ({
           );
         })}
       </div>
+
+      {/* Preview Modal for Formatted WhatsApp Text */}
+      {previewModal && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl text-right">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <h3 className="text-base font-bold text-white flex items-center gap-2">
+                <MessageSquare className="w-5 h-5 text-emerald-400" />
+                {previewModal.title}
+              </h3>
+              <button
+                onClick={() => setPreviewModal(null)}
+                className="text-slate-400 hover:text-white text-xs px-2 py-1 rounded-lg bg-slate-800"
+              >
+                ✕ סגור
+              </button>
+            </div>
+
+            <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 max-h-72 overflow-y-auto">
+              <pre className="text-xs text-slate-200 whitespace-pre-wrap font-sans leading-relaxed">
+                {previewModal.content}
+              </pre>
+            </div>
+
+            <div className="flex items-center justify-between gap-3 pt-2">
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(previewModal.content);
+                  alert('הטקסט הועתק ללוח!');
+                }}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800 text-slate-300 hover:text-white text-xs font-semibold"
+              >
+                <Copy className="w-4 h-4" />
+                <span>העתק טקסט</span>
+              </button>
+
+              {previewModal.waUrl && (
+                <a
+                  href={previewModal.waUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-lg"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                  <span>פתח ישירות ב-WhatsApp</span>
+                </a>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

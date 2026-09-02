@@ -2,7 +2,7 @@ import { DriverInfo, Order, OrderItem, LogisticsDictionaryItem, DeliveryNoteReco
 
 // ==========================================
 // TABLE 1: "מילון_לוגיסטי" (Logistics Dictionary & Product Catalog)
-// Tab 1 from Google Spreadsheet: 1VA9J6n9IYcooO_s2xOpnkvyDQWWQD3pfhh0cnenCkoA
+// Tab 1 from Google Spreadsheet: 1fy79UJXTIGf8Br5co2pQtPggJkIRyClgG7KBKE1cov0
 // SKU, Official_Name, Category, Unit, Keywords, Default_Warehouse, Deposit_Type, Weight_Kg
 // ==========================================
 export const LOGISTICS_DICTIONARY: LogisticsDictionaryItem[] = [
@@ -586,10 +586,10 @@ export const INITIAL_ORDERS: Order[] = [
     orderDate: '10/08/2026',
     orderContact: 'עודד — 0506610054',
     orderAgent: 'ריימונד ביטון',
-    orderDocumentUrl: 'https://docs.google.com/spreadsheets/d/1VA9J6n9IYcooO_s2xOpnkvyDQWWQD3pfhh0cnenCkoA/edit#order=6214797',
+    orderDocumentUrl: 'https://docs.google.com/spreadsheets/d/1fy79UJXTIGf8Br5co2pQtPggJkIRyClgG7KBKE1cov0/edit#order=6214797',
     orderDocumentName: 'הזמנת_לקוח_6214797_זבולון_עדירן.pdf',
     customerFolderUrl: 'https://drive.google.com/drive/folders/1JGNbTlmB5yBH_cLOApKTvE39CEL6roFF?usp=drive_link#customer_607125',
-    directSheetViewUrl: 'https://docs.google.com/spreadsheets/d/1VA9J6n9IYcooO_s2xOpnkvyDQWWQD3pfhh0cnenCkoA/edit#gid=0&range=H2',
+    directSheetViewUrl: 'https://docs.google.com/spreadsheets/d/1fy79UJXTIGf8Br5co2pQtPggJkIRyClgG7KBKE1cov0/edit#gid=0&range=H2',
     signatureReceived: false,
     isSynced: true
   },
@@ -628,10 +628,10 @@ export const INITIAL_ORDERS: Order[] = [
     orderDate: '10/08/2026',
     orderContact: 'אייל — 054-9988112',
     orderAgent: 'ריימונד ביטון',
-    orderDocumentUrl: 'https://docs.google.com/spreadsheets/d/1VA9J6n9IYcooO_s2xOpnkvyDQWWQD3pfhh0cnenCkoA/edit#order=6215184',
+    orderDocumentUrl: 'https://docs.google.com/spreadsheets/d/1fy79UJXTIGf8Br5co2pQtPggJkIRyClgG7KBKE1cov0/edit#order=6215184',
     orderDocumentName: 'הזמנת_לקוח_6215184_בן_ענבר.pdf',
     customerFolderUrl: 'https://drive.google.com/drive/folders/1JGNbTlmB5yBH_cLOApKTvE39CEL6roFF?usp=drive_link#customer_612108',
-    directSheetViewUrl: 'https://docs.google.com/spreadsheets/d/1VA9J6n9IYcooO_s2xOpnkvyDQWWQD3pfhh0cnenCkoA/edit#gid=0&range=H3',
+    directSheetViewUrl: 'https://docs.google.com/spreadsheets/d/1fy79UJXTIGf8Br5co2pQtPggJkIRyClgG7KBKE1cov0/edit#gid=0&range=H3',
     signatureReceived: false,
     isSynced: true
   },

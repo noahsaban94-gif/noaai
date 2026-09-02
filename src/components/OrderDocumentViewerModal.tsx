@@ -75,8 +75,8 @@ export const OrderDocumentViewerModal: React.FC<OrderDocumentViewerModalProps> =
   const customerFolderBaseId = '1JGNbTlmB5yBH_cLOApKTvE39CEL6roFF';
   const customerFolderName = `${order.customerNumber || '607125'} - ${order.customerName}`;
   const exactCustomerFolderUrl = order.customerFolderUrl || `https://drive.google.com/drive/folders/${customerFolderBaseId}?usp=drive_link#customer_${order.customerNumber || '607125'}`;
-  const currentDocUrl = order.orderDocumentUrl || `https://docs.google.com/spreadsheets/d/1VA9J6n9IYcooO_s2xOpnkvyDQWWQD3pfhh0cnenCkoA/edit#gid=0&order=${order.orderNumber}`;
-  const currentSheetViewUrl = order.directSheetViewUrl || `https://docs.google.com/spreadsheets/d/1VA9J6n9IYcooO_s2xOpnkvyDQWWQD3pfhh0cnenCkoA/edit#gid=0&range=H2`;
+  const currentDocUrl = order.orderDocumentUrl || `https://docs.google.com/spreadsheets/d/1fy79UJXTIGf8Br5co2pQtPggJkIRyClgG7KBKE1cov0/edit#gid=0&order=${order.orderNumber}`;
+  const currentSheetViewUrl = order.directSheetViewUrl || `https://docs.google.com/spreadsheets/d/1fy79UJXTIGf8Br5co2pQtPggJkIRyClgG7KBKE1cov0/edit#gid=0&range=H2`;
 
   const hasPhysicalFile = Boolean(filePreviewUrl || order.orderFileBase64);
   const isPdf = filePreviewUrl?.startsWith('data:application/pdf') || uploadedFileName.toLowerCase().endsWith('.pdf');
@@ -140,7 +140,7 @@ export const OrderDocumentViewerModal: React.FC<OrderDocumentViewerModalProps> =
       setUploadProgress(100);
 
       const generatedDriveUrl = data.driveFileUrl || `https://drive.google.com/file/d/SABAN_DOC_${order.orderNumber}/view`;
-      const generatedSheetViewUrl = `https://docs.google.com/spreadsheets/d/1VA9J6n9IYcooO_s2xOpnkvyDQWWQD3pfhh0cnenCkoA/edit#gid=0&order=${order.orderNumber}`;
+      const generatedSheetViewUrl = `https://docs.google.com/spreadsheets/d/1fy79UJXTIGf8Br5co2pQtPggJkIRyClgG7KBKE1cov0/edit#gid=0&order=${order.orderNumber}`;
 
       setFileUploadedTime(new Date().toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' }));
 
@@ -252,10 +252,10 @@ export const OrderDocumentViewerModal: React.FC<OrderDocumentViewerModalProps> =
   // Google Apps Script full production code
   const fullGasScriptCode = `/**
  * סקריפט אינטגרציה מלא: סידור נועה AI ⟷ תיקיות לקוחות ב-Google Drive & גיליון מרכזי
- * Web App Endpoint: https://script.google.com/macros/s/AKfycby2gmtPDJZwsmUzrGf606g7FiY7JkE11FAN4wgb0_NU0J5k3p0AmRGozXJWrBqIdc0/exec
+ * Web App Endpoint: https://script.google.com/macros/s/AKfycbzHSfCnuuz0oyi5jeIEOjzH-tDAi_qGH4SqOh_M0YVXzDl5lTQYZNw_-GQ26CU2WVgH/exec
  */
 const CONFIG = {
-  SPREADSHEET_ID: '1VA9J6n9IYcooO_s2xOpnkvyDQWWQD3pfhh0cnenCkoA',
+  SPREADSHEET_ID: '1fy79UJXTIGf8Br5co2pQtPggJkIRyClgG7KBKE1cov0',
   CUSTOMER_FOLDERS_ROOT_ID: '1JGNbTlmB5yBH_cLOApKTvE39CEL6roFF',
   DELIVERY_NOTES_ROOT_ID: '1Hnq5RjGmE0368ZCAKBratRJGzaj0wJJl',
   SHEET_ORDERS_NAME: 'דשבורד_הזמנות'
@@ -552,7 +552,7 @@ function getContentType(fileName) {
                   </a>
 
                   <a
-                    href={`https://docs.google.com/spreadsheets/d/1VA9J6n9IYcooO_s2xOpnkvyDQWWQD3pfhh0cnenCkoA/edit#gid=0&order=${order.orderNumber}`}
+                    href={`https://docs.google.com/spreadsheets/d/1fy79UJXTIGf8Br5co2pQtPggJkIRyClgG7KBKE1cov0/edit#gid=0&order=${order.orderNumber}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className={`px-3 py-1.5 rounded-xl border font-black text-xs transition flex items-center gap-1.5 shadow-sm ${
@@ -868,7 +868,7 @@ function getContentType(fileName) {
                   </a>
 
                   <a
-                    href={`https://docs.google.com/spreadsheets/d/1VA9J6n9IYcooO_s2xOpnkvyDQWWQD3pfhh0cnenCkoA/edit`}
+                    href={`https://docs.google.com/spreadsheets/d/1fy79UJXTIGf8Br5co2pQtPggJkIRyClgG7KBKE1cov0/edit`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className={`px-5 py-2.5 rounded-2xl border font-black text-xs transition flex items-center gap-2 shadow-sm ${
@@ -893,7 +893,7 @@ function getContentType(fileName) {
                     קוד Google Apps Script פעיל (Web App)
                   </h3>
                   <p className="text-xs text-slate-500">
-                    מחובר לכתובת הפריסה: https://script.google.com/macros/s/AKfycby2gmtPDJZwsmUzrGf606g7FiY7JkE11FAN4wgb0_NU0J5k3p0AmRGozXJWrBqIdc0/exec
+                    מחובר לכתובת הפריסה: https://script.google.com/macros/s/AKfycbzHSfCnuuz0oyi5jeIEOjzH-tDAi_qGH4SqOh_M0YVXzDl5lTQYZNw_-GQ26CU2WVgH/exec
                   </p>
                 </div>
                 <button

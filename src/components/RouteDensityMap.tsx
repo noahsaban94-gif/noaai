@@ -542,7 +542,7 @@ export const RouteDensityMap: React.FC<RouteDensityMapProps> = ({
     const scriptContent = `/**
  * ח. סבן חומרי בניין בע"מ — Master Google Apps Script Integration Engine
  * העתק סקריפט זה ל-Extensions -> Apps Script בגיליון:
- * 1VA9J6n9IYcooO_s2xOpnkvyDQWWQD3pfhh0cnenCkoA
+ * 1fy79UJXTIGf8Br5co2pQtPggJkIRyClgG7KBKE1cov0
  */
 // ראה קובץ מלא במערכת: google_apps_script_full_integration.gs
 function setupEntireLogisticsSystem() {
@@ -1110,11 +1110,11 @@ function setupEntireLogisticsSystem() {
               <pre>{`/**
  * ח. סבן חומרי בניין בע"מ — Google Apps Script Master Integration Engine
  * סקריפט אינטגרציה מלא ומאוחד (All-in-One Production Code)
- * מזהה גיליון ראשי: 1VA9J6n9IYcooO_s2xOpnkvyDQWWQD3pfhh0cnenCkoA
+ * מזהה גיליון ראשי: 1fy79UJXTIGf8Br5co2pQtPggJkIRyClgG7KBKE1cov0
  * תיקיית גוגל דרייב ראשית: 1JGNbTlmB5yBH_cLOApKTvE39CEL6roFF
  */
 
-const SPREADSHEET_ID = '1VA9J6n9IYcooO_s2xOpnkvyDQWWQD3pfhh0cnenCkoA';
+const SPREADSHEET_ID = '1fy79UJXTIGf8Br5co2pQtPggJkIRyClgG7KBKE1cov0';
 const CUSTOMER_ROOT_FOLDER_ID = '1JGNbTlmB5yBH_cLOApKTvE39CEL6roFF';
 
 function setupEntireLogisticsSystem() {

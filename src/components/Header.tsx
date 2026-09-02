@@ -83,7 +83,7 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
             <p className={`text-[11px] font-medium flex items-center gap-1.5 ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-              סנכרון ליבה חי מול גיליון: <span className="font-mono font-bold text-sky-600 dark:text-cyan-300">1VA9J6n...</span>
+              סנכרון ליבה חי מול גיליון: <span className="font-mono font-bold text-sky-600 dark:text-cyan-300">1fy79UJ...</span>
             </p>
           </div>
         </div>
@@ -158,7 +158,7 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* Direct Link to Live Master Sheet */}
           <a
-            href="https://docs.google.com/spreadsheets/d/1VA9J6n9IYcooO_s2xOpnkvyDQWWQD3pfhh0cnenCkoA/edit"
+            href="https://docs.google.com/spreadsheets/d/1fy79UJXTIGf8Br5co2pQtPggJkIRyClgG7KBKE1cov0/edit"
             target="_blank"
             rel="noopener noreferrer"
             id="open-google-sheet-link"

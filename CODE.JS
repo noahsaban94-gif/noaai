@@ -1,10 +1,12 @@
 /**
  * ==============================================================================================
- * ח. סבן חומרי בניין (1994) בע"מ — Google Apps Script Master Integration Engine
- * סקריפט אינטגרציה מלא ומאוחד (All-in-One Production Code)
- * מזהה גיליון ראשי (Live Master): 1fy79UJXTIGf8Br5co2pQtPggJkIRyClgG7KBKE1cov0
- * תיקיית דרייב ראשית ללקוחות: 1JGNbTlmB5yBH_cLOApKTvE39CEL6roFF
- * ערוץ שידור Make.com WhatsApp Webhook: https://hook.eu1.make.com/j1kfxfn5y4goe1lud3dk1phkw4bkjvyr
+ * ח. סבן חומרי בניין (1994) בע"מ — Google Apps Script Master Integration Engine (CODE.JS)
+ * מנוע סנכרון לוגיסטי, אינטגרציית גיליונות, ניהול דרייב ושידור WhatsApp דרך Make.com
+ * 
+ * 📊 מזהה גיליון ראשי (Live Master): 1fy79UJXTIGf8Br5co2pQtPggJkIRyClgG7KBKE1cov0
+ * 📁 תיקיית דרייב ראשית ללקוחות: 1JGNbTlmB5yBH_cLOApKTvE39CEL6roFF
+ * 📁 תיקיית דרייב לתעודות משלוח: 1Hnq5RjGmE0368ZCAKBratRJGzaj0wJJl
+ * 🔗 Make.com WhatsApp Webhook: https://hook.eu1.make.com/j1kfxfn5y4goe1lud3dk1phkw4bkjvyr
  * ==============================================================================================
  */
 
@@ -16,6 +18,7 @@ const CUSTOMER_ROOT_FOLDER_ID = '1JGNbTlmB5yBH_cLOApKTvE39CEL6roFF';
 const DELIVERY_NOTES_FOLDER_ID = '1Hnq5RjGmE0368ZCAKBratRJGzaj0wJJl';
 const MAKE_WEBHOOK_ENDPOINT = 'https://hook.eu1.make.com/j1kfxfn5y4goe1lud3dk1phkw4bkjvyr';
 
+// פרטי התקשרות נהגים ומנהל
 const CONTACTS = {
   RAMI: { name: 'ראמי סבן', phone: '0505298818', role: 'מנכ"ל ומנהל תפעול' },
   HIKMAT: { name: 'חכמת (מרצדס מנוף 26ט)', phone: '0508861080', truck: 'משאית מנוף 615-41-002', capacityKg: 26000 },
@@ -23,6 +26,7 @@ const CONTACTS = {
   NOA_AI: { name: 'נועה AI', role: 'סדרנית ראשית ומנהלת לוגיסטיקה' }
 };
 
+// שמות כל הטאבים בגיליון המאוחד
 const SHEET_NAMES = {
   MORNING_DISPATCH: 'דוח_בוקר_מבצעי',
   ORDERS_DASHBOARD: 'דשבורד_הזמנות',
@@ -35,14 +39,14 @@ const SHEET_NAMES = {
 };
 
 // ==========================================
-// 2. תפריט מותאם אישית בגיליון
+// 2. תפריט מותאם אישית לפתיחה ב-Google Sheets
 // ==========================================
 function onOpen() {
   const ui = SpreadsheetApp.getUi();
   ui.createMenu('🚚 סבן לוגיסטיקה — נועה AI')
     .addItem('⚡ שחזור ואתחול כל הטאבים והכותרות', 'setupEntireLogisticsSystem')
     .addItem('📲 שידור דוח בוקר ל-WhatsApp (Make)', 'triggerMorningReportWhatsApp')
-    .addItem('📦 סנכרון הזמנות פעילות לדוח בוקר', 'seedInitialMorningDispatch')
+    .addItem('📦 סנכרון הזמנות פעילות לדוח בוקר', 'syncActiveOrdersToMorningDispatch')
     .addItem('🔒 נעילת דוח בוקר וארכוב יומי', 'archiveCurrentMorningReport')
     .addSeparator()
     .addItem('🧪 בדיקת חיבור Webhook ל-Make.com', 'testMakeWebhookConnection')
@@ -50,7 +54,7 @@ function onOpen() {
 }
 
 // ==========================================
-// 3. אתחול ושחזור כל הטאבים
+// 3. פונקציית אתחול ויצירת כל הטאבים עם כותרות ועיצוב
 // ==========================================
 function setupEntireLogisticsSystem() {
   const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
@@ -112,7 +116,7 @@ function setupEntireLogisticsSystem() {
   seedDictionaryData(ss);
   seedInitialMorningDispatch(ss);
 
-  Logger.log('✓ שחזור מלא של כל הטאבים בגיליון ח. סבן הושלם בהצלחה!');
+  Logger.log('✓ כל הטאבים בגיליון ח. סבן שוחזרו, אותחלו ועוצבו בהצלחה!');
 }
 
 function initSheetWithHeaders(ss, sheetName, headers, headerColor) {
@@ -120,6 +124,7 @@ function initSheetWithHeaders(ss, sheetName, headers, headerColor) {
   if (!sheet) {
     sheet = ss.insertSheet(sheetName);
   }
+  
   sheet.setRightToLeft(true);
   
   if (sheet.getLastRow() === 0) {
@@ -134,6 +139,7 @@ function initSheetWithHeaders(ss, sheetName, headers, headerColor) {
   }
 }
 
+// אתחול ייעודי לדוח בוקר מבצעי
 function initMorningDispatchSheet(ss) {
   let sheet = ss.getSheetByName(SHEET_NAMES.MORNING_DISPATCH);
   if (!sheet) {
@@ -142,6 +148,7 @@ function initMorningDispatchSheet(ss) {
   sheet.setRightToLeft(true);
 
   if (sheet.getLastRow() === 0) {
+    // שורת כותרת 1
     sheet.getRange('A1:L1').merge();
     sheet.getRange('A1').setValue('ח. סבן חומרי בניין (1994) בע"מ — דוח בוקר מבצעי וסידור עבודה יומי 🚚')
       .setBackground('#0f172a')
@@ -150,6 +157,7 @@ function initMorningDispatchSheet(ss) {
       .setFontWeight('bold')
       .setHorizontalAlignment('center');
 
+    // שורת תת-כותרת 2
     sheet.getRange('A2:L2').merge();
     sheet.getRange('A2').setValue(`מועד הדוח: ${new Date().toLocaleDateString('he-IL')} | מנוע סנכרון נועה AI מחובר בזמן אמת | לחץ על הקישורים בעמודה האחרונה לשידור ישיר ל-WhatsApp`)
       .setBackground('#1e293b')
@@ -157,6 +165,7 @@ function initMorningDispatchSheet(ss) {
       .setFontSize(10)
       .setHorizontalAlignment('center');
 
+    // שורת כותרות עמודות 4
     const headers = [
       'סבב ושעה', 'מספר הזמנה', 'שם לקוח', 'מחסן מקור', 'כתובת יעד ועיר',
       'נהג משובץ', 'פירוט מוצרים וכמויות', 'פקדונות (בלות/משטחים)',
@@ -173,11 +182,11 @@ function initMorningDispatchSheet(ss) {
   }
 }
 
+// ==========================================
+// 4. הזנת נתונים ראשוניים לדוח בוקר
+// ==========================================
 function seedInitialMorningDispatch(ss) {
-  if (!ss) ss = SpreadsheetApp.openById(SPREADSHEET_ID);
   const sheet = ss.getSheetByName(SHEET_NAMES.MORNING_DISPATCH);
-  if (!sheet) return;
-
   if (sheet.getLastRow() <= 4) {
     const orders = [
       {
@@ -243,6 +252,7 @@ function seedInitialMorningDispatch(ss) {
       const isHikmat = o.driver.includes('חכמת');
       const driverName = isHikmat ? 'חכמת' : 'עלי';
       
+      // יצירת הודעת תדריך נקייה ומעוצבת לוואטסאפ ללא שגיאות נוסחה
       const waMessage = `🚚 תדריך נסיעה — ח. סבן חומרי בניין בע"מ
 שלום ${driverName}!
 משימה: הזמנה #${o.orderNumber}
@@ -287,9 +297,10 @@ ${o.waze}
   }
 }
 
+// הזנת מילון ערים
 function seedCitiesData(ss) {
   const sheet = ss.getSheetByName(SHEET_NAMES.CITIES);
-  if (sheet && sheet.getLastRow() <= 1) {
+  if (sheet.getLastRow() <= 1) {
     const citiesRows = [
       ['טירה', 1.2, 0.8, 5, 'שרון דרומי', 'כביש 444', 150, 32.2345, 34.9515, 45],
       ['כפר סבא', 9.8, 9.2, 16, 'שרון מזרחי', 'כביש 531', 250, 32.1782, 34.9076, 82],
@@ -311,9 +322,10 @@ function seedCitiesData(ss) {
   }
 }
 
+// הזנת מילון מק"טים ולוגיסטיקה
 function seedDictionaryData(ss) {
   const sheet = ss.getSheetByName(SHEET_NAMES.DICTIONARY);
-  if (sheet && sheet.getLastRow() <= 1) {
+  if (sheet.getLastRow() <= 1) {
     const dictRows = [
       ['10002', 'מלט אפור נשר 25 ק"ג', 'מלט ומליטה', 'שק', 'מלט, אפור, נשר', '4_HARASH', 'משטח (60060)', 25, 'חכמת (משאית מנוף)'],
       ['11501', 'חול שק גדול (בלה)', 'חול ומחצבה', 'בלה', 'חול, בלה, שק גדול', '4_HARASH', 'בלה (60002)', 1000, 'חכמת (משאית מנוף)'],
@@ -334,9 +346,12 @@ function seedDictionaryData(ss) {
 }
 
 // =========================================================================
-// 4. מנוע שליחת WHATSAPP מעוצב דרך MAKE.COM
+// 5. מנוע עיצוב ושליחת הודעות WHATSAPP מעוצבות דרך MAKE.COM WEBHOOK
 // =========================================================================
 
+/**
+ * פונקציה ראשית לשליחת Webhook ל-Make.com
+ */
 function sendWhatsAppViaMake(payload) {
   try {
     const options = {
@@ -367,6 +382,9 @@ function sendWhatsAppViaMake(payload) {
   }
 }
 
+/**
+ * 1. עיצוב תדריך וואטסאפ אישי לחכמת (משאית מרצדס מנוף 26 טון)
+ */
 function formatWhatsAppHikmat(order) {
   return `🏗️ *תדריך משימה מבצעי — חכמת (מרצדס מנוף 26ט)*
 שלום חכמת אחי היקר! להלן פרטי המשימה המשובצת עבורך:
@@ -397,6 +415,9 @@ ${order.wazeUrl || `https://www.waze.com/ul?q=${encodeURIComponent(order.siteAdd
 באדיבות נועה AI ❤️ יד ימינו של ראמי סבן`;
 }
 
+/**
+ * 2. עיצוב תדריך וואטסאפ אישי לעלי (משאית איסוזו 15 טון)
+ */
 function formatWhatsAppAli(order) {
   return `🚚 *תדריך נסיעה יומי — עלי (משאית איסוזו 15ט)*
 שלום עלי היקר! להלן פרטי הנסיעה המשובצת עבורך:
@@ -420,6 +441,9 @@ ${order.wazeUrl || `https://www.waze.com/ul?q=${encodeURIComponent(order.siteAdd
 באדיבות נועה AI ❤️ יד ימינו של ראמי סבן`;
 }
 
+/**
+ * 3. עיצוב דוח בוקר מבצעי מרוכז לראמי ולקבוצת הניהול
+ */
 function formatWhatsAppMorningReport(orders, stats) {
   const dateStr = new Date().toLocaleDateString('he-IL');
   const totalOrders = orders.length;
@@ -451,6 +475,9 @@ https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/edit
 באדיבות נועה AI ❤️ יד ימינו הנאמנה של ראמי סבן`;
 }
 
+/**
+ * 4. עיצוב הודעת WhatsApp מעודכנת ללקוח (הזמנה בדרך לאתר)
+ */
 function formatWhatsAppCustomer(order) {
   const isHikmat = (order.driver || order.assignedDriver || '').includes('חכמת');
   const driverName = isHikmat ? 'חכמת' : 'עלי';
@@ -474,6 +501,9 @@ ${order.bigBagsDeposit > 0 ? `• שקי בלה (60002): ${order.bigBagsDeposit}
 תודה שבחרת בח. סבן — איכות ושירות ללא פשרות! ❤️`;
 }
 
+/**
+ * פונקציית שליחה ישירה ל-Make עבור דוח בוקר
+ */
 function triggerMorningReportWhatsApp() {
   const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
   const sheet = ss.getSheetByName(SHEET_NAMES.MORNING_DISPATCH);
@@ -523,6 +553,7 @@ function triggerMorningReportWhatsApp() {
   };
 
   const result = sendWhatsAppViaMake(payload);
+  
   if (result.success) {
     SpreadsheetApp.getUi().alert('✓ דוח הבוקר שודר בהצלחה לוואטסאפ דרך Make.com!');
   } else {
@@ -530,6 +561,9 @@ function triggerMorningReportWhatsApp() {
   }
 }
 
+/**
+ * בדיקת חיבור Webhook ל-Make
+ */
 function testMakeWebhookConnection() {
   const payload = {
     event: 'test_connection',
@@ -548,7 +582,7 @@ function testMakeWebhookConnection() {
 }
 
 // ==========================================
-// 5. ניהול תיקיות דרייב
+// 6. ניהול תיקיות לקוחות ב-Google Drive
 // ==========================================
 function getOrCreateCustomerFolder(customerNumber, customerName) {
   try {
@@ -561,6 +595,7 @@ function getOrCreateCustomerFolder(customerNumber, customerName) {
       return { folderUrl: folder.getUrl(), folderId: folder.getId() };
     }
     
+    // יצירת תיקייה חדשה אם לא קיימת
     const newFolder = parentFolder.createFolder(folderName);
     newFolder.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
     return { folderUrl: newFolder.getUrl(), folderId: newFolder.getId() };
@@ -574,7 +609,7 @@ function getOrCreateCustomerFolder(customerNumber, customerName) {
 }
 
 // ==========================================
-// 6. Web App HTTP Handler (doGet / doPost)
+// 7. Web App HTTP Handler (doGet / doPost)
 // ==========================================
 function doGet(e) {
   const action = (e && e.parameter && e.parameter.action) ? e.parameter.action : 'getOpenOrders';
@@ -704,6 +739,7 @@ function doPost(e) {
     const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
 
     if (action === 'sendWhatsApp' || action === 'sendWhatsAppViaMake') {
+      // שליחת הודעה דרך Make.com Webhook
       const waType = payload.type || 'driver_dispatch';
       const order = payload.order || payload.data || {};
       let formattedMsg = '';
