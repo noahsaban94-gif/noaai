@@ -413,99 +413,240 @@ async function fetchGASJson(url: string, options: any = {}) {
   }
 }
 
-// Core Orders fetched from Saban logistics inbox & Comax ERP
+// Core Orders fetched from Saban logistics inbox & Comax ERP (Complete 6 Live Orders)
 const EMAIL_ORDERS_DATA = [
   {
     orderNumber: '6214797',
+    orderId: '6214797',
     customerNumber: '607125',
     customerName: 'זבולון-עדירן/צחי חגג',
     siteAddress: 'הנרקיסים 32, כפר שמריהו',
+    destination: 'הנרקיסים 32, כפר שמריהו',
     city: 'כפר שמריהו',
     warehouse: '4_HARASH',
-    warehouseName: 'החרש 4 (מרכזי)',
+    warehouseName: '🏭 4️⃣ החרש (מלט וטיח)',
     itemsFormatted: '1. 📦 מק"ט: 15710 | טיח חוץ 710 שק 25 ק"ג | כמות: 42 שק\n2. 📦 מק"ט: 60060 | משטח סבן פקדון | כמות: 1 פקדון',
+    itemsDetails: '(מק"ט: 15710 - טיח חוץ 710 שק 25 ק"ג כמות: 42 שק), (מק"ט: 60060 - משטח סבן פקדון כמות: 1)',
+    itemsList: [
+      { sku: '15710', name: 'טיח חוץ 710 שק 25 ק"ג', quantity: 42, unit: 'שק', depositType: 'pallet' },
+      { sku: '60060', name: 'משטח סבן פקדון', quantity: 1, unit: 'פקדון', depositType: 'pallet' }
+    ],
     bigBagsDeposit: 0,
     palletsDeposit: 1,
     assignedDriver: 'חכמת (משאית מנוף)',
-    status: 'בסידור עבודה',
+    driver: 'חכמת (משאית מנוף)',
+    driverId: 'hikmat',
+    driverPhone: '050-886-1080',
+    status: 'Pending',
     deliveryNote: 'טרם הופקה',
     wazeUrl: 'https://waze.com/ul?q=HaNarkisim+32+Kfar+Shmaryahu&navigate=yes',
     totalWeightKg: 1050,
     isCraneRequired: true,
     scheduledTime: '09:15',
+    round: 'סבב 1 (09:15)',
+    orderDate: '10/08/2026',
+    orderContact: 'עודד — 0506610054',
+    orderAgent: 'ריימונד ביטון',
     orderDocumentUrl: 'https://docs.google.com/spreadsheets/d/1VA9J6n9IYcooO_s2xOpnkvyDQWWQD3pfhh0cnenCkoA/edit#order=6214797',
     orderDocumentName: 'הזמנת_לקוח_6214797_זבולון_עדירן.pdf',
     customerFolderUrl: 'https://drive.google.com/drive/folders/1JGNbTlmB5yBH_cLOApKTvE39CEL6roFF?usp=drive_link#customer_607125',
-    directSheetViewUrl: 'https://docs.google.com/spreadsheets/d/1VA9J6n9IYcooO_s2xOpnkvyDQWWQD3pfhh0cnenCkoA/edit#gid=0&range=H2'
+    directSheetViewUrl: 'https://docs.google.com/spreadsheets/d/1VA9J6n9IYcooO_s2xOpnkvyDQWWQD3pfhh0cnenCkoA/edit#gid=0&range=H2',
+    signatureReceived: false,
+    isSynced: true
   },
   {
     orderNumber: '6215184',
+    orderId: '6215184',
     customerNumber: '612108',
     customerName: 'בן ענבר פרויקטים בע"מ',
     siteAddress: 'דרך המשי 12, רעננה',
+    destination: 'דרך המשי 12, רעננה',
     city: 'רעננה',
     warehouse: '4_HARASH',
-    warehouseName: 'החרש 4 (מרכזי)',
+    warehouseName: '🏭 4️⃣ החרש (מלט וחול)',
     itemsFormatted: '1. 📦 מק"ט: 11501 | חול שק גדול (בלה) | כמות: 3 בלה\n2. 📦 מק"ט: 10002 | מלט אפור 25 ק"ג נשר | כמות: 25 שק\n3. 📦 מק"ט: 18055 | הובלת מנוף רעננה | כמות: 1 הובלה\n4. 📦 מק"ט: 60002 | שק גדול פקדון | כמות: 3 פקדון\n5. 📦 מק"ט: 60060 | משטח סבן פקדון | כמות: 1 פקדון',
+    itemsDetails: '(מק"ט: 11501 - חול שק גדול (בלה) כמות: 3), (מק"ט: 10002 - מלט אפור 25 ק"ג נשר כמות: 25), (מק"ט: 18055 - הובלת מנוף רעננה כמות: 1)',
+    itemsList: [
+      { sku: '11501', name: 'חול שק גדול (בלה)', quantity: 3, unit: 'בלה', depositType: 'bigBag' },
+      { sku: '10002', name: 'מלט אפור 25 ק"ג נשר', quantity: 25, unit: 'שק', depositType: 'pallet' },
+      { sku: '18055', name: 'הובלת מנוף רעננה', quantity: 1, unit: 'הובלה', depositType: 'none' },
+      { sku: '60002', name: 'שק גדול פקדון', quantity: 3, unit: 'פקדון', depositType: 'bigBag' },
+      { sku: '60060', name: 'משטח סבן פקדון', quantity: 1, unit: 'פקדון', depositType: 'pallet' }
+    ],
     bigBagsDeposit: 3,
     palletsDeposit: 1,
-    assignedDriver: 'חכמת (מנוף)',
-    status: 'בסידור עבודה',
-    deliveryNote: 'טרם הופקה',
+    assignedDriver: 'חכמת (משאית מנוף)',
+    driver: 'חכמת (משאית מנוף)',
+    driverId: 'hikmat',
+    driverPhone: '050-886-1080',
+    status: 'In Progress',
+    deliveryNote: 'DN-6215184',
     wazeUrl: 'https://waze.com/ul?q=Derech+HaMeshi+12+Raanana&navigate=yes',
     totalWeightKg: 3500,
     isCraneRequired: true,
     scheduledTime: '07:30',
+    round: 'סבב 1 (07:30)',
+    orderDate: '10/08/2026',
+    orderContact: 'אייל — 054-9988112',
+    orderAgent: 'ריימונד ביטון',
     orderDocumentUrl: 'https://docs.google.com/spreadsheets/d/1VA9J6n9IYcooO_s2xOpnkvyDQWWQD3pfhh0cnenCkoA/edit#order=6215184',
     orderDocumentName: 'הזמנת_לקוח_6215184_בן_ענבר.pdf',
     customerFolderUrl: 'https://drive.google.com/drive/folders/1JGNbTlmB5yBH_cLOApKTvE39CEL6roFF?usp=drive_link#customer_612108',
-    directSheetViewUrl: 'https://docs.google.com/spreadsheets/d/1VA9J6n9IYcooO_s2xOpnkvyDQWWQD3pfhh0cnenCkoA/edit#gid=0&range=H3'
+    directSheetViewUrl: 'https://docs.google.com/spreadsheets/d/1VA9J6n9IYcooO_s2xOpnkvyDQWWQD3pfhh0cnenCkoA/edit#gid=0&range=H3',
+    signatureReceived: false,
+    isSynced: true
   },
   {
     orderNumber: '6215180',
+    orderId: '6215180',
     customerNumber: '608930',
     customerName: 'קראמה אסאמה — שיפוצים',
     siteAddress: 'רוטשילד 45, כפר סבא',
+    destination: 'רוטשילד 45, כפר סבא',
     city: 'כפר סבא',
     warehouse: '4_HARASH',
-    warehouseName: 'החרש 4 (מרכזי)',
+    warehouseName: '🏭 4️⃣ החרש (מלט וחול)',
     itemsFormatted: '1. 📦 מק"ט: 11551 | טיט שק גדול (בלה) | כמות: 4 בלה\n2. 📦 מק"ט: 14075 | טיח גבס MP75 | כמות: 20 שק\n3. 📦 מק"ט: 18055 | הובלת מנוף כ"ס | כמות: 1 הובלה\n4. 📦 מק"ט: 60002 | שק גדול פקדון | כמות: 4 פקדון\n5. 📦 מק"ט: 60060 | משטח סבן פקדון | כמות: 1 פקדון',
+    itemsDetails: '(מק"ט: 11551 - טיט שק גדול (בלה) כמות: 4), (מק"ט: 14075 - טיח גבס MP75 קנאוף כמות: 20)',
+    itemsList: [
+      { sku: '11551', name: 'טיט שק גדול (בלה)', quantity: 4, unit: 'בלה', depositType: 'bigBag' },
+      { sku: '14075', name: 'טיח גבס MP75', quantity: 20, unit: 'שק', depositType: 'pallet' },
+      { sku: '18055', name: 'הובלת מנוף כ"ס', quantity: 1, unit: 'הובלה', depositType: 'none' },
+      { sku: '60002', name: 'שק גדול פקדון', quantity: 4, unit: 'פקדון', depositType: 'bigBag' },
+      { sku: '60060', name: 'משטח סבן פקדון', quantity: 1, unit: 'פקדון', depositType: 'pallet' }
+    ],
     bigBagsDeposit: 4,
     palletsDeposit: 1,
-    assignedDriver: 'חכמת (מנוף)',
-    status: 'בסידור עבודה',
+    assignedDriver: 'חכמת (משאית מנוף)',
+    driver: 'חכמת (משאית מנוף)',
+    driverId: 'hikmat',
+    driverPhone: '050-886-1080',
+    status: 'Pending',
     deliveryNote: 'טרם הופקה',
     wazeUrl: 'https://waze.com/ul?q=Rothschild+45+Kfar+Saba&navigate=yes',
     totalWeightKg: 4200,
     isCraneRequired: true,
     scheduledTime: '10:30',
+    round: 'סבב 2 (10:30)',
     orderDocumentUrl: 'https://docs.google.com/spreadsheets/d/1VA9J6n9IYcooO_s2xOpnkvyDQWWQD3pfhh0cnenCkoA/edit#order=6215180',
     orderDocumentName: 'הזמנת_לקוח_6215180_קראמה.pdf',
     customerFolderUrl: 'https://drive.google.com/drive/folders/1JGNbTlmB5yBH_cLOApKTvE39CEL6roFF?usp=drive_link#customer_608930',
-    directSheetViewUrl: 'https://docs.google.com/spreadsheets/d/1VA9J6n9IYcooO_s2xOpnkvyDQWWQD3pfhh0cnenCkoA/edit#gid=0&range=H4'
+    directSheetViewUrl: 'https://docs.google.com/spreadsheets/d/1VA9J6n9IYcooO_s2xOpnkvyDQWWQD3pfhh0cnenCkoA/edit#gid=0&range=H4',
+    signatureReceived: false,
+    isSynced: false
   },
   {
     orderNumber: '6215178',
+    orderId: '6215178',
     customerNumber: '602115',
     customerName: 'בזלת מזר בע"מ',
     siteAddress: 'שדה בוקר 17, גבעתיים',
+    destination: 'שדה בוקר 17, גבעתיים',
     city: 'גבעתיים',
     warehouse: '1_TALMID',
-    warehouseName: 'התלמיד 1 (גבס)',
+    warehouseName: '🏟️ 1️⃣ התלמיד (גבס)',
     itemsFormatted: '1. 📦 מק"ט: 112200 | לוח גבס ירוק 200 ע 12.50 | כמות: 6 לוח\n2. 📦 מק"ט: 111200 | לוח גבס לבן 200 ע 12.50 | כמות: 40 לוח\n3. 📦 מק"ט: 9570300 | ניצב 70/300 0.5 | כמות: 20 יח\'\n4. 📦 מק"ט: 8570300 | מסלול 70/300 0.5 | כמות: 16 יח\'\n5. 📦 מק"ט: 76133 | בורג פחפח 13 1000 יח\' | כמות: 1 קופסה',
+    itemsDetails: '(מק"ט: 111200 - לוח גבס לבן 200 ע 12.50 כמות: 40), (מק"ט: 112200 - לוח גבס ירוק 200 ע 12.50 עמיד לחות כמות: 6), (מק"ט: 9570300 - ניצב 70/300 0.5 כמות: 20), (מק"ט: 8570300 - מסלול 70/300 0.5 כמות: 16)',
+    itemsList: [
+      { sku: '112200', name: 'לוח גבס ירוק 200 ע 12.50', quantity: 6, unit: 'לוח', depositType: 'none' },
+      { sku: '111200', name: 'לוח גבס לבן 200 ע 12.50', quantity: 40, unit: 'לוח', depositType: 'none' },
+      { sku: '9570300', name: 'ניצב 70/300 0.5', quantity: 20, unit: 'יח\'', depositType: 'none' },
+      { sku: '8570300', name: 'מסלול 70/300 0.5', quantity: 16, unit: 'יח\'', depositType: 'none' },
+      { sku: '76133', name: 'בורג פחפח 13 1000 יח\'', quantity: 1, unit: 'קופסה', depositType: 'none' }
+    ],
     bigBagsDeposit: 0,
     palletsDeposit: 0,
-    assignedDriver: 'עלי (משאית)',
-    status: 'בסידור עבודה',
-    deliveryNote: 'טרם הופקה',
+    assignedDriver: 'עלי (משאית חלוקה)',
+    driver: 'עלי (משאית חלוקה)',
+    driverId: 'ali',
+    driverPhone: '052-771-4490',
+    status: 'In Progress',
+    deliveryNote: 'DN-6215178',
     wazeUrl: 'https://waze.com/ul?q=Sde+Boker+17+Givatayim&navigate=yes',
     totalWeightKg: 1800,
     isCraneRequired: false,
     scheduledTime: '08:00',
+    round: 'סבב 1 (08:00)',
     orderDocumentUrl: 'https://docs.google.com/spreadsheets/d/1VA9J6n9IYcooO_s2xOpnkvyDQWWQD3pfhh0cnenCkoA/edit#order=6215178',
     orderDocumentName: 'הזמנת_לקוח_6215178_בזלת.pdf',
     customerFolderUrl: 'https://drive.google.com/drive/folders/1JGNbTlmB5yBH_cLOApKTvE39CEL6roFF?usp=drive_link#customer_602115',
-    directSheetViewUrl: 'https://docs.google.com/spreadsheets/d/1VA9J6n9IYcooO_s2xOpnkvyDQWWQD3pfhh0cnenCkoA/edit#gid=0&range=H5'
+    directSheetViewUrl: 'https://docs.google.com/spreadsheets/d/1VA9J6n9IYcooO_s2xOpnkvyDQWWQD3pfhh0cnenCkoA/edit#gid=0&range=H5',
+    signatureReceived: false,
+    isSynced: true
+  },
+  {
+    orderNumber: '6215165',
+    orderId: '6215165',
+    customerNumber: '601004',
+    customerName: 'אלפא הנדסה ובנייה',
+    siteAddress: 'הירקון 112, תל אביב',
+    destination: 'הירקון 112, תל אביב',
+    city: 'תל אביב',
+    warehouse: '1_TALMID',
+    warehouseName: '🏟️ 1️⃣ התלמיד (כלי עבודה)',
+    itemsFormatted: '1. 📦 מק"ט: 41544 | להבים לסכין יפני רחב | כמות: 10 יח\'\n2. 📦 מק"ט: 76133 | בורג פחפח 13 (1000 יח\') | כמות: 5 קופסה',
+    itemsDetails: '(מק"ט: 41544 - להבים לסכין יפני רחב (18 מ"מ) כמות: 10), (מק"ט: 76133 - בורג פחפח 13 (1000 יח\') כמות: 5)',
+    itemsList: [
+      { sku: '41544', name: 'להבים לסכין יפני רחב (18 מ"מ)', quantity: 10, unit: 'יח\'', depositType: 'none' },
+      { sku: '76133', name: 'בורג פחפח 13 (1000 יח\')', quantity: 5, unit: 'קופסה', depositType: 'none' }
+    ],
+    bigBagsDeposit: 0,
+    palletsDeposit: 0,
+    assignedDriver: 'עלי (משאית חלוקה)',
+    driver: 'עלי (משאית חלוקה)',
+    driverId: 'ali',
+    driverPhone: '052-771-4490',
+    status: 'Delivered',
+    deliveryNote: 'DN-6215165',
+    wazeUrl: 'https://waze.com/ul?q=HaYarkon+112+Tel+Aviv&navigate=yes',
+    totalWeightKg: 10,
+    isCraneRequired: false,
+    scheduledTime: '09:15',
+    round: 'סבב 1 (09:15)',
+    deliveredAt: '09:42',
+    orderDocumentUrl: 'https://docs.google.com/spreadsheets/d/1VA9J6n9IYcooO_s2xOpnkvyDQWWQD3pfhh0cnenCkoA/edit#order=6215165',
+    orderDocumentName: 'הזמנת_לקוח_6215165_אלפא.pdf',
+    customerFolderUrl: 'https://drive.google.com/drive/folders/1JGNbTlmB5yBH_cLOApKTvE39CEL6roFF?usp=drive_link#customer_601004',
+    directSheetViewUrl: 'https://docs.google.com/spreadsheets/d/1VA9J6n9IYcooO_s2xOpnkvyDQWWQD3pfhh0cnenCkoA/edit#gid=0&range=H6',
+    signatureReceived: true,
+    isSynced: true
+  },
+  {
+    orderNumber: '6215152',
+    orderId: '6215152',
+    customerNumber: '603391',
+    customerName: 'מבני שרון — אבי רונן',
+    siteAddress: 'סוקולוב 34, הרצליה',
+    destination: 'סוקולוב 34, הרצליה',
+    city: 'הרצליה',
+    warehouse: '4_HARASH',
+    warehouseName: '🏭 4️⃣ החרש (מלט וחול)',
+    itemsFormatted: '1. 📦 מק"ט: 10002 | מלט אפור נשר 25 ק"ג | כמות: 30 שק\n2. 📦 מק"ט: 11501 | חול שק גדול (בלה) | כמות: 2 בלה\n3. 📦 מק"ט: 31100 | שפכטל אמריקאי מוכן 28 ק"ג | כמות: 4 דלי',
+    itemsDetails: '(מק"ט: 10002 - מלט אפור נשר 25 ק"ג כמות: 30), (מק"ט: 11501 - חול שק גדול בלה כמות: 2), (מק"ט: 31100 - שפכטל אמריקאי דלי כמות: 4)',
+    itemsList: [
+      { sku: '10002', name: 'מלט אפור נשר 25 ק"ג', quantity: 30, unit: 'שק', depositType: 'pallet' },
+      { sku: '11501', name: 'חול שק גדול (בלה)', quantity: 2, unit: 'בלה', depositType: 'bigBag' },
+      { sku: '31100', name: 'שפכטל אמריקאי 28 ק"ג', quantity: 4, unit: 'דלי', depositType: 'none' }
+    ],
+    bigBagsDeposit: 2,
+    palletsDeposit: 1,
+    assignedDriver: 'חכמת (משאית מנוף)',
+    driver: 'חכמת (משאית מנוף)',
+    driverId: 'hikmat',
+    driverPhone: '050-886-1080',
+    status: 'Pending',
+    deliveryNote: 'טרם הופקה',
+    wazeUrl: 'https://waze.com/ul?q=Sokolov+34+Herzliya&navigate=yes',
+    totalWeightKg: 2800,
+    isCraneRequired: true,
+    scheduledTime: '11:45',
+    round: 'סבב 2 (11:45)',
+    orderDocumentUrl: 'https://docs.google.com/spreadsheets/d/1VA9J6n9IYcooO_s2xOpnkvyDQWWQD3pfhh0cnenCkoA/edit#order=6215152',
+    orderDocumentName: 'הזמנת_לקוח_6215152_מבני_שרון.pdf',
+    customerFolderUrl: 'https://drive.google.com/drive/folders/1JGNbTlmB5yBH_cLOApKTvE39CEL6roFF?usp=drive_link#customer_603391',
+    directSheetViewUrl: 'https://docs.google.com/spreadsheets/d/1VA9J6n9IYcooO_s2xOpnkvyDQWWQD3pfhh0cnenCkoA/edit#gid=0&range=H7',
+    signatureReceived: false,
+    isSynced: false
   }
 ];
 
@@ -516,7 +657,6 @@ app.get('/api/gas/dictionary', async (req, res) => {
     return res.json(data);
   }
 
-  // Return connected status and spreadsheet metadata
   return res.json({
     status: 'success',
     spreadsheetId: TARGET_SPREADSHEET_ID,
@@ -525,6 +665,87 @@ app.get('/api/gas/dictionary', async (req, res) => {
     totalItems: 35,
     categoriesCount: 11,
     timestamp: new Date().toISOString()
+  });
+});
+
+// GET /api/gas/cities - Fetch synced cities with precise distances from Saban Base Hubs
+app.get('/api/gas/cities', async (req, res) => {
+  const data = await fetchGASJson(`${GAS_ENDPOINT_URL}?action=getCities&spreadsheetId=${TARGET_SPREADSHEET_ID}`);
+  if (data && data.status === 'success') {
+    return res.json(data);
+  }
+
+  return res.json({
+    status: 'success',
+    spreadsheetId: TARGET_SPREADSHEET_ID,
+    sheetName: 'ערים_ויעדים',
+    cities: [
+      { city: 'טירה', distHarash: 1.2, distTalmid: 0.8, driveTimeMin: 5, zone: 'שרון דרומי', roads: 'כביש 444', fee: 150, lat: 32.2345, lng: 34.9515 },
+      { city: 'כפר סבא', distHarash: 9.8, distTalmid: 9.2, driveTimeMin: 16, zone: 'שרון מזרחי', roads: 'כביש 531', fee: 250, lat: 32.1782, lng: 34.9076 },
+      { city: 'רעננה', distHarash: 12.4, distTalmid: 11.8, driveTimeMin: 18, zone: 'שרון מרכזי', roads: 'כביש 531 / 4', fee: 280, lat: 32.1848, lng: 34.8707 },
+      { city: 'הרצליה', distHarash: 18.5, distTalmid: 17.9, driveTimeMin: 24, zone: 'שרון מרכזי', roads: 'כביש 531 / 2', fee: 320, lat: 32.1663, lng: 34.8432 },
+      { city: 'כפר שמריהו', distHarash: 17.2, distTalmid: 16.6, driveTimeMin: 22, zone: 'שרון מרכזי', roads: 'כביש 531 / 2', fee: 320, lat: 32.1890, lng: 34.8210 },
+      { city: 'גבעתיים', distHarash: 26.5, distTalmid: 25.9, driveTimeMin: 32, zone: 'גוש דן', roads: 'כביש 4 / 20', fee: 350, lat: 32.0722, lng: 34.8101 },
+      { city: 'תל אביב', distHarash: 27.8, distTalmid: 27.2, driveTimeMin: 35, zone: 'תל אביב', roads: 'כביש 20 / 2', fee: 380, lat: 32.0853, lng: 34.7818 }
+    ]
+  });
+});
+
+// GET /api/gas/visit-history - Fetch visit history & predictive order models
+app.get('/api/gas/visit-history', async (req, res) => {
+  const data = await fetchGASJson(`${GAS_ENDPOINT_URL}?action=getVisitHistory&spreadsheetId=${TARGET_SPREADSHEET_ID}`);
+  if (data && data.status === 'success') {
+    return res.json(data);
+  }
+
+  return res.json({
+    status: 'success',
+    spreadsheetId: TARGET_SPREADSHEET_ID,
+    sheetName: 'היסטוריית_ביקורים',
+    history: [
+      {
+        customerId: '607125',
+        customerName: 'זבולון-עדירן/צחי חגג',
+        city: 'כפר שמריהו',
+        address: 'הנרקיסים 32, כפר שמריהו',
+        visitsMonth: 14,
+        lastVisit: '08/08/2026',
+        avgWeight: 1200,
+        materials: 'טיח חוץ 710, מלט אפור',
+        preferredDriver: 'חכמת (משאית מנוף)',
+        predictedNext: '12/08/2026 (בעוד יומיים)',
+        demandLevel: 'גבוה',
+        confidence: 94
+      },
+      {
+        customerId: '612108',
+        customerName: 'בן ענבר פרויקטים בע"מ',
+        city: 'רעננה',
+        address: 'דרך המשי 12, רעננה',
+        visitsMonth: 22,
+        lastVisit: '09/08/2026',
+        avgWeight: 3800,
+        materials: 'חול בלות 11501, מלט נשר',
+        preferredDriver: 'חכמת (משאית מנוף)',
+        predictedNext: '11/08/2026 (מחר)',
+        demandLevel: 'גבוה',
+        confidence: 98
+      },
+      {
+        customerId: '608930',
+        customerName: 'קראמה אסאמה — שיפוצים',
+        city: 'כפר סבא',
+        address: 'רוטשילד 45, כפר סבא',
+        visitsMonth: 9,
+        lastVisit: '07/08/2026',
+        avgWeight: 4100,
+        materials: 'טיט בלה 11551, טיח גבס MP75',
+        preferredDriver: 'חכמת (משאית מנוף)',
+        predictedNext: '13/08/2026',
+        demandLevel: 'בינוני',
+        confidence: 88
+      }
+    ]
   });
 });
 
