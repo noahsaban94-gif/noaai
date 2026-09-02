@@ -17,9 +17,13 @@ import {
   Phone,
   PackageCheck,
   Building,
-  Printer
+  Printer,
+  Package,
+  Boxes,
+  Scale
 } from 'lucide-react';
 import { Order, OrderStatus } from '../types';
+import { useTheme } from '../context/ThemeContext';
 
 interface OrderCardModalProps {
   order: Order | null;
@@ -35,6 +39,9 @@ export const OrderCardModal: React.FC<OrderCardModalProps> = ({
   onGenerateDeliveryNote
 }) => {
   if (!order) return null;
+
+  const { theme } = useTheme();
+  const isLight = theme === 'light';
 
   const [isSigning, setIsSigning] = useState(false);
   const [signatureUrl, setSignatureUrl] = useState<string | null>(order.signatureImage || null);
@@ -72,7 +79,7 @@ export const OrderCardModal: React.FC<OrderCardModalProps> = ({
     const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
 
     ctx.lineTo(clientX - rect.left, clientY - rect.top);
-    ctx.strokeStyle = '#0284c7';
+    ctx.strokeStyle = isLight ? '#0284c7' : '#38bdf8';
     ctx.lineWidth = 3;
     ctx.lineCap = 'round';
     ctx.stroke();
@@ -110,75 +117,91 @@ export const OrderCardModal: React.FC<OrderCardModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
-      <div className="bg-slate-900 border border-slate-700/80 rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 text-right">
+      <div className={`rounded-3xl shadow-2xl w-full max-w-3xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 text-right border ${
+        isLight ? 'bg-white border-sky-200 shadow-sky-200/50' : 'bg-slate-900 border-slate-800 shadow-2xl'
+      }`}>
         {/* Modal Header */}
-        <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-cyan-950/40 p-5 border-b border-slate-800 flex items-center justify-between">
+        <div className={`p-5 border-b flex items-center justify-between ${
+          isLight 
+            ? 'bg-gradient-to-r from-sky-50 via-white to-blue-50 border-sky-100' 
+            : 'bg-gradient-to-r from-slate-950 via-slate-900 to-cyan-950/40 border-slate-800'
+        }`}>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-cyan-500/20 border border-cyan-500/40 flex items-center justify-center text-cyan-400">
+            <div className={`w-11 h-11 rounded-2xl border flex items-center justify-center ${
+              isLight ? 'bg-sky-100 border-sky-300 text-sky-700' : 'bg-cyan-500/20 border-cyan-500/40 text-cyan-400'
+            }`}>
               <FileText className="w-5 h-5" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="font-mono text-xs px-2 py-0.5 rounded bg-cyan-950 text-cyan-400 border border-cyan-800">
+                <span className={`font-mono text-xs px-2.5 py-0.5 rounded-xl font-bold border ${
+                  isLight ? 'bg-sky-100 text-sky-900 border-sky-300' : 'bg-cyan-950 text-cyan-400 border-cyan-800'
+                }`}>
                   הזמנה #{order.orderId || order.orderNumber}
                 </span>
-                <span className={`px-2 py-0.5 rounded-full text-[11px] font-semibold ${
+                <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-black border ${
                   order.status === 'Delivered' || order.status === 'סופק בהצלחה'
-                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                    ? isLight ? 'bg-emerald-100 text-emerald-800 border-emerald-300' : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
                     : order.status === 'In Progress' || order.status === 'בדרך לאתר' || order.status === 'הועמס במחסן'
-                    ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-                    : 'bg-slate-800 text-slate-300'
+                    ? isLight ? 'bg-amber-100 text-amber-900 border-amber-300' : 'bg-amber-500/20 text-amber-300 border-amber-500/30'
+                    : isLight ? 'bg-slate-100 text-slate-700 border-slate-300' : 'bg-slate-800 text-slate-300 border-slate-700'
                 }`}>
                   {order.status}
                 </span>
               </div>
-              <h2 className="text-lg font-bold text-white mt-1">{order.customerName}</h2>
+              <h2 className={`text-xl font-black mt-1 font-hebrew-heavy ${isLight ? 'text-slate-900' : 'text-white'}`}>
+                {order.customerName}
+              </h2>
             </div>
           </div>
 
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition"
+            className={`w-9 h-9 rounded-xl border flex items-center justify-center transition ${
+              isLight ? 'bg-slate-100 hover:bg-slate-200 text-slate-600 border-slate-200' : 'bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white border-slate-700'
+            }`}
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* View Mode Navigation */}
-        <div className="px-5 pt-3 border-b border-slate-800 flex gap-2 bg-slate-950/50">
+        <div className={`px-5 pt-3 border-b flex gap-2 ${
+          isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-950/50 border-slate-800'
+        }`}>
           <button
             onClick={() => setActiveTab('details')}
-            className={`px-4 py-2 text-xs font-semibold rounded-t-xl transition border-b-2 ${
+            className={`px-4 py-2 text-xs font-black rounded-t-xl transition border-b-2 ${
               activeTab === 'details'
-                ? 'border-cyan-400 text-cyan-400 bg-slate-900'
-                : 'border-transparent text-slate-400 hover:text-slate-200'
+                ? isLight ? 'border-sky-600 text-sky-800 bg-white' : 'border-cyan-400 text-cyan-400 bg-slate-900'
+                : isLight ? 'border-transparent text-slate-500 hover:text-slate-800' : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
             פרטי הזמנה ושיוך לוגיסטי
           </button>
           <button
             onClick={() => setActiveTab('signature')}
-            className={`px-4 py-2 text-xs font-semibold rounded-t-xl transition border-b-2 flex items-center gap-1.5 ${
+            className={`px-4 py-2 text-xs font-black rounded-t-xl transition border-b-2 flex items-center gap-1.5 ${
               activeTab === 'signature'
-                ? 'border-cyan-400 text-cyan-400 bg-slate-900'
-                : 'border-transparent text-slate-400 hover:text-slate-200'
+                ? isLight ? 'border-sky-600 text-sky-800 bg-white' : 'border-cyan-400 text-cyan-400 bg-slate-900'
+                : isLight ? 'border-transparent text-slate-500 hover:text-slate-800' : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
             <PenTool className="w-3.5 h-3.5" />
             <span>חתימה דיגיטלית</span>
-            {signatureUrl && <CheckCircle2 className="w-3 h-3 text-emerald-400" />}
+            {signatureUrl && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />}
           </button>
           <button
             onClick={() => setActiveTab('pdf')}
-            className={`px-4 py-2 text-xs font-semibold rounded-t-xl transition border-b-2 flex items-center gap-1.5 ${
+            className={`px-4 py-2 text-xs font-black rounded-t-xl transition border-b-2 flex items-center gap-1.5 ${
               activeTab === 'pdf'
-                ? 'border-cyan-400 text-cyan-400 bg-slate-900'
-                : 'border-transparent text-slate-400 hover:text-slate-200'
+                ? isLight ? 'border-sky-600 text-sky-800 bg-white' : 'border-cyan-400 text-cyan-400 bg-slate-900'
+                : isLight ? 'border-transparent text-slate-500 hover:text-slate-800' : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
             <Printer className="w-3.5 h-3.5" />
             <span>תעודת משלוח (PDF)</span>
-            {isGenerated && <span className="w-2 h-2 rounded-full bg-emerald-400" />}
+            {isGenerated && <span className="w-2 h-2 rounded-full bg-emerald-500" />}
           </button>
         </div>
 
@@ -187,77 +210,103 @@ export const OrderCardModal: React.FC<OrderCardModalProps> = ({
           <div className="p-5 space-y-5">
             {/* Top Metadata Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div className="p-3 rounded-xl bg-slate-950/80 border border-slate-800">
-                <span className="text-[10px] text-slate-400 block mb-1">יעד ואתר פריקה</span>
-                <p className="text-xs font-semibold text-white flex items-center gap-1.5">
-                  <MapPin className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+              <div className={`p-3.5 rounded-2xl border ${
+                isLight ? 'bg-sky-50/50 border-sky-200/80' : 'bg-slate-950/80 border-slate-800'
+              }`}>
+                <span className={`text-[10px] block mb-1 font-bold ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>יעד ואתר פריקה</span>
+                <p className={`text-xs font-black flex items-center gap-1.5 ${isLight ? 'text-slate-900' : 'text-white'}`}>
+                  <MapPin className={`w-3.5 h-3.5 shrink-0 ${isLight ? 'text-sky-600' : 'text-cyan-400'}`} />
                   <span>{order.siteAddress || order.destination}</span>
                 </p>
                 <a
                   href={order.wazeUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="mt-2 inline-flex items-center gap-1 text-[11px] text-cyan-400 hover:text-cyan-300 font-medium"
+                  className={`mt-2 inline-flex items-center gap-1 text-[11px] font-black ${
+                    isLight ? 'text-sky-700 hover:text-sky-900' : 'text-cyan-400 hover:text-cyan-300'
+                  }`}
                 >
                   <Navigation className="w-3 h-3" />
-                  <span>נווט ב-Waze</span>
+                  <span>נווט ב-Waze לאתר</span>
                 </a>
               </div>
 
-              <div className="p-3 rounded-xl bg-slate-950/80 border border-slate-800">
-                <span className="text-[10px] text-slate-400 block mb-1">נהג ומשאית משויכת</span>
-                <p className="text-xs font-semibold text-white flex items-center gap-1.5">
-                  <Truck className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+              <div className={`p-3.5 rounded-2xl border ${
+                isLight ? 'bg-sky-50/50 border-sky-200/80' : 'bg-slate-950/80 border-slate-800'
+              }`}>
+                <span className={`text-[10px] block mb-1 font-bold ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>נהג ומשאית משויכת</span>
+                <p className={`text-xs font-black flex items-center gap-1.5 ${isLight ? 'text-slate-900' : 'text-white'}`}>
+                  <Truck className={`w-3.5 h-3.5 shrink-0 ${isLight ? 'text-sky-600' : 'text-cyan-400'}`} />
                   <span>{order.assignedDriver || order.driver}</span>
                 </p>
                 {order.driverPhone && (
-                  <span className="text-[10px] text-slate-400 font-mono block mt-1">
+                  <span className={`text-[10px] font-mono font-bold block mt-1 ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
                     טלפון: {order.driverPhone}
                   </span>
                 )}
               </div>
 
-              <div className="p-3 rounded-xl bg-slate-950/80 border border-slate-800">
-                <span className="text-[10px] text-slate-400 block mb-1">מחסן יוצא וסבב</span>
-                <p className="text-xs font-semibold text-white">
+              <div className={`p-3.5 rounded-2xl border ${
+                isLight ? 'bg-sky-50/50 border-sky-200/80' : 'bg-slate-950/80 border-slate-800'
+              }`}>
+                <span className={`text-[10px] block mb-1 font-bold ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>מחסן יוצא וסבב</span>
+                <p className={`text-xs font-black ${isLight ? 'text-slate-900' : 'text-white'}`}>
                   {order.warehouseName || (order.warehouse === '4_HARASH' ? '🏭 4️⃣ החרש' : '🏟️ 1️⃣ התלמיד')}
                 </p>
-                <div className="flex items-center gap-2 mt-1.5 text-[11px] text-slate-400">
-                  <Clock className="w-3 h-3 text-cyan-400" />
+                <div className={`flex items-center gap-2 mt-1.5 text-[11px] font-bold ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
+                  <Clock className={`w-3 h-3 ${isLight ? 'text-sky-600' : 'text-cyan-400'}`} />
                   <span>שעה: {order.scheduledTime || '08:00'}</span>
                 </div>
               </div>
             </div>
 
-            {/* Normalized Items String (Google Sheets Table 2 Structure) */}
-            <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
+            {/* Normalized Items String (With Background) */}
+            <div className={`p-4 rounded-2xl border space-y-2 ${
+              isLight ? 'bg-sky-50/80 border-sky-200' : 'bg-slate-950 border-slate-800'
+            }`}>
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
-                  <Sparkles className="w-4 h-4 text-cyan-400" />
+                <span className={`text-xs font-black flex items-center gap-1.5 ${
+                  isLight ? 'text-sky-950' : 'text-slate-200'
+                }`}>
+                  <Package className={`w-4 h-4 ${isLight ? 'text-sky-600' : 'text-cyan-400'}`} />
                   <span>פירוט פריטים מנורמל (Items_Details):</span>
                 </span>
-                <span className="text-[10px] font-mono text-cyan-400">מבנה טבלה 2</span>
+                <span className={`text-[10px] font-mono px-2 py-0.5 rounded-md font-bold ${
+                  isLight ? 'bg-white text-sky-800 border border-sky-200' : 'text-cyan-400 bg-slate-900'
+                }`}>מבנה טבלה 2</span>
               </div>
-              <p className="font-mono text-xs text-cyan-300 leading-relaxed bg-slate-900/80 p-3 rounded-lg border border-slate-800/80">
+              <p className={`font-mono text-xs font-bold leading-relaxed p-3 rounded-xl border whitespace-pre-line ${
+                isLight 
+                  ? 'bg-white text-slate-900 border-sky-100 shadow-sm' 
+                  : 'bg-slate-900/80 text-cyan-300 border-slate-800/80'
+              }`}>
                 {order.itemsDetails || order.itemsFormatted}
               </p>
             </div>
 
             {/* Structured Items Table */}
             {order.itemsList && order.itemsList.length > 0 && (
-              <div className="border border-slate-800 rounded-xl overflow-hidden">
-                <div className="bg-slate-950 px-3 py-2 text-slate-400 text-[11px] font-mono border-b border-slate-800 flex justify-between">
+              <div className={`border rounded-2xl overflow-hidden ${
+                isLight ? 'border-slate-200' : 'border-slate-800'
+              }`}>
+                <div className={`px-3 py-2 text-[11px] font-mono font-bold border-b flex justify-between ${
+                  isLight ? 'bg-slate-100 text-slate-700 border-slate-200' : 'bg-slate-950 text-slate-400 border-slate-800'
+                }`}>
                   <span>רשימת מק"טים בהזמנה</span>
                   <span>{order.itemsList.length} פריטים</span>
                 </div>
-                <div className="divide-y divide-slate-800/60 max-h-40 overflow-y-auto">
+                <div className={`divide-y max-h-40 overflow-y-auto ${
+                  isLight ? 'divide-slate-200 bg-white' : 'divide-slate-800/60 bg-slate-950'
+                }`}>
                   {order.itemsList.map((item, i) => (
-                    <div key={i} className="p-2.5 flex items-center justify-between text-xs hover:bg-slate-800/30">
+                    <div key={i} className={`p-2.5 flex items-center justify-between text-xs transition ${
+                      isLight ? 'hover:bg-sky-50/50' : 'hover:bg-slate-800/30'
+                    }`}>
                       <div className="flex items-center gap-2">
-                        <span className="font-mono font-bold text-cyan-400">#{item.sku}</span>
-                        <span className="text-white font-medium">{item.name}</span>
+                        <span className={`font-mono font-black ${isLight ? 'text-sky-700' : 'text-cyan-400'}`}>#{item.sku}</span>
+                        <span className={`font-bold ${isLight ? 'text-slate-900' : 'text-white'}`}>{item.name}</span>
                       </div>
-                      <span className="font-mono text-slate-300 font-semibold">
+                      <span className={`font-mono font-bold ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>
                         {item.quantity} {item.unit}
                       </span>
                     </div>
@@ -267,35 +316,51 @@ export const OrderCardModal: React.FC<OrderCardModalProps> = ({
             )}
 
             {/* Deposits & Logistics Indicators */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-slate-800 text-xs">
-              <div className="p-2.5 rounded-lg bg-slate-950/60 border border-slate-800/80">
-                <span className="text-[10px] text-slate-500 block">בלות פקדון (60002)</span>
-                <span className="font-mono font-bold text-white">{order.bigBagsDeposit}</span>
+            <div className={`grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t text-xs ${
+              isLight ? 'border-slate-200' : 'border-slate-800'
+            }`}>
+              <div className={`p-3 rounded-2xl border ${
+                isLight ? 'bg-purple-50 border-purple-200' : 'bg-slate-950/60 border-slate-800/80'
+              }`}>
+                <span className={`text-[10px] block font-bold ${isLight ? 'text-purple-700' : 'text-slate-500'}`}>בלות פקדון (60002)</span>
+                <span className={`font-mono font-black text-sm ${isLight ? 'text-purple-950' : 'text-white'}`}>{order.bigBagsDeposit}</span>
               </div>
-              <div className="p-2.5 rounded-lg bg-slate-950/60 border border-slate-800/80">
-                <span className="text-[10px] text-slate-500 block">משטחי סבן (60060)</span>
-                <span className="font-mono font-bold text-white">{order.palletsDeposit}</span>
+              <div className={`p-3 rounded-2xl border ${
+                isLight ? 'bg-indigo-50 border-indigo-200' : 'bg-slate-950/60 border-slate-800/80'
+              }`}>
+                <span className={`text-[10px] block font-bold ${isLight ? 'text-indigo-700' : 'text-slate-500'}`}>משטחי סבן (60060)</span>
+                <span className={`font-mono font-black text-sm ${isLight ? 'text-indigo-950' : 'text-white'}`}>{order.palletsDeposit}</span>
               </div>
-              <div className="p-2.5 rounded-lg bg-slate-950/60 border border-slate-800/80">
-                <span className="text-[10px] text-slate-500 block">משקל משוער</span>
-                <span className="font-mono font-bold text-white">{order.totalWeightKg} ק"ג</span>
+              <div className={`p-3 rounded-2xl border ${
+                isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-950/60 border-slate-800/80'
+              }`}>
+                <span className={`text-[10px] block font-bold ${isLight ? 'text-slate-500' : 'text-slate-500'}`}>משקל משוער</span>
+                <span className={`font-mono font-black text-sm ${isLight ? 'text-slate-900' : 'text-white'}`}>{order.totalWeightKg} ק"ג</span>
               </div>
-              <div className="p-2.5 rounded-lg bg-slate-950/60 border border-slate-800/80">
-                <span className="text-[10px] text-slate-500 block">דרישת מנוף</span>
-                <span className={`font-semibold ${order.isCraneRequired ? 'text-amber-400' : 'text-slate-400'}`}>
+              <div className={`p-3 rounded-2xl border ${
+                isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-950/60 border-slate-800/80'
+              }`}>
+                <span className={`text-[10px] block font-bold ${isLight ? 'text-slate-500' : 'text-slate-500'}`}>דרישת מנוף</span>
+                <span className={`font-bold ${order.isCraneRequired ? 'text-amber-600 dark:text-amber-400' : isLight ? 'text-slate-600' : 'text-slate-400'}`}>
                   {order.isCraneRequired ? 'כן (מנוף הידראולי)' : 'ללא מנוף'}
                 </span>
               </div>
             </div>
 
             {/* Action Bar */}
-            <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-800">
+            <div className={`flex flex-wrap items-center justify-between gap-3 pt-3 border-t ${
+              isLight ? 'border-slate-200' : 'border-slate-800'
+            }`}>
               <div className="flex items-center gap-2">
-                <span className="text-xs text-slate-400">עדכן סטטוס:</span>
+                <span className={`text-xs font-bold ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>עדכן סטטוס:</span>
                 <select
                   value={order.status}
                   onChange={(e) => onUpdateStatus && onUpdateStatus(order.orderNumber, e.target.value as OrderStatus)}
-                  className="px-3 py-1.5 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white focus:outline-none focus:border-cyan-500 font-medium"
+                  className={`px-3 py-1.5 rounded-xl border text-xs font-bold focus:outline-none ${
+                    isLight 
+                      ? 'bg-slate-50 border-slate-300 text-slate-900' 
+                      : 'bg-slate-950 border-slate-700 text-white focus:border-cyan-500'
+                  }`}
                 >
                   <option value="Pending">בסידור עבודה (Pending)</option>
                   <option value="In Progress">בדרך לאתר (In Progress)</option>
@@ -305,7 +370,11 @@ export const OrderCardModal: React.FC<OrderCardModalProps> = ({
 
               <button
                 onClick={() => setActiveTab('signature')}
-                className="px-4 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs transition flex items-center gap-1.5 shadow-md shadow-cyan-500/20"
+                className={`px-4 py-2.5 rounded-2xl font-black text-xs transition flex items-center gap-1.5 shadow-md ${
+                  isLight
+                    ? 'bg-sky-600 hover:bg-sky-500 text-white shadow-sky-600/30'
+                    : 'bg-cyan-500 hover:bg-cyan-400 text-slate-950 shadow-cyan-500/20'
+                }`}
               >
                 <FileText className="w-4 h-4" />
                 <span>הפק תעודת משלוח וחתימה</span>
@@ -319,19 +388,25 @@ export const OrderCardModal: React.FC<OrderCardModalProps> = ({
           <div className="p-5 space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-sm font-bold text-white">חתימת לקוח / מנהל עבודה באתר</h3>
-                <p className="text-xs text-slate-400">חתום באמצעות האצבע, עט מגע או עכבר לאישור קבלת הסחורה.</p>
+                <h3 className={`text-sm font-black font-hebrew-heavy ${isLight ? 'text-slate-900' : 'text-white'}`}>
+                  חתימת לקוח / מנהל עבודה באתר
+                </h3>
+                <p className={`text-xs font-medium ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
+                  חתום באמצעות האצבע, עט מגע או עכבר לאישור קבלת הסחורה.
+                </p>
               </div>
               {signatureUrl && (
-                <span className="px-2.5 py-1 rounded-full text-xs bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
-                  <CheckCircle2 className="w-3.5 h-3.5" />
+                <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                   <span>קיימת חתימה</span>
                 </span>
               )}
             </div>
 
             {/* Signature Canvas Box */}
-            <div className="border-2 border-dashed border-cyan-800/80 rounded-2xl bg-slate-950 p-3 flex flex-col items-center justify-center relative">
+            <div className={`border-2 border-dashed rounded-3xl p-4 flex flex-col items-center justify-center relative ${
+              isLight ? 'bg-sky-50/50 border-sky-300' : 'bg-slate-950 border-cyan-800/80'
+            }`}>
               <canvas
                 ref={canvasRef}
                 width={500}
@@ -343,9 +418,13 @@ export const OrderCardModal: React.FC<OrderCardModalProps> = ({
                 onTouchStart={startDrawing}
                 onTouchMove={draw}
                 onTouchEnd={stopDrawing}
-                className="bg-slate-900 rounded-xl cursor-crosshair w-full max-w-[500px] touch-none"
+                className={`rounded-2xl cursor-crosshair w-full max-w-[500px] touch-none shadow-sm ${
+                  isLight ? 'bg-white border border-sky-100' : 'bg-slate-900'
+                }`}
               />
-              <div className="w-full max-w-[500px] flex items-center justify-between text-[11px] text-slate-500 pt-2 px-1">
+              <div className={`w-full max-w-[500px] flex items-center justify-between text-[11px] font-bold pt-2 px-1 ${
+                isLight ? 'text-slate-500' : 'text-slate-500'
+              }`}>
                 <span>חתימת מקבל: {order.customerName}</span>
                 <span>תאריך: {new Date().toLocaleDateString('he-IL')}</span>
               </div>
@@ -355,16 +434,20 @@ export const OrderCardModal: React.FC<OrderCardModalProps> = ({
             <div className="flex items-center justify-between gap-3 pt-2">
               <button
                 onClick={clearSignature}
-                className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium transition flex items-center gap-1.5"
+                className={`px-4 py-2 rounded-2xl text-xs font-bold transition flex items-center gap-1.5 border ${
+                  isLight 
+                    ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200' 
+                    : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700'
+                }`}
               >
-                <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+                <Trash2 className="w-3.5 h-3.5 text-rose-500" />
                 <span>נקה חתימה</span>
               </button>
 
               <div className="flex items-center gap-2">
                 <button
                   onClick={saveSignature}
-                  className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition flex items-center gap-1.5 shadow-md shadow-emerald-600/20"
+                  className="px-5 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs transition flex items-center gap-1.5 shadow-md shadow-emerald-600/20"
                 >
                   <CheckCircle2 className="w-4 h-4" />
                   <span>שמור חתימה ועבור לתעודת משלוח</span>
@@ -374,75 +457,75 @@ export const OrderCardModal: React.FC<OrderCardModalProps> = ({
           </div>
         )}
 
-        {/* Tab 3: Delivery Note PDF Preview (Table 3 Representation) */}
+        {/* Tab 3: Delivery Note PDF Preview */}
         {activeTab === 'pdf' && (
           <div className="p-5 space-y-4">
             {/* Delivery Note Sheet Layout Mock */}
-            <div className="bg-white text-slate-950 p-6 rounded-2xl shadow-xl space-y-4 border border-slate-300 text-right print:p-0">
+            <div className="bg-white text-slate-950 p-6 rounded-3xl shadow-xl space-y-4 border border-slate-200 text-right print:p-0">
               {/* Header */}
               <div className="flex items-start justify-between border-b-2 border-slate-900 pb-3">
                 <div>
-                  <h1 className="text-base sm:text-lg font-black tracking-tight text-slate-900">
+                  <h1 className="text-lg font-black tracking-tight text-slate-900 font-hebrew-heavy">
                     ח. סבן חומרי בניין (1994) בע"מ
                   </h1>
-                  <p className="text-[11px] text-slate-600">ח.פ 512019482 | אזור תעשייה טירה | טל: 09-7938383</p>
+                  <p className="text-[11px] text-slate-600 font-bold">ח.פ 512019482 | אזור תעשייה טירה | טל: 09-7938383</p>
                 </div>
                 <div className="text-left font-mono">
-                  <span className="block text-xs font-bold text-cyan-800">
+                  <span className="block text-xs font-black text-sky-800">
                     תעודת משלוח #{order.deliveryNote || `DN-${order.orderNumber}`}
                   </span>
-                  <span className="block text-[10px] text-slate-500">
+                  <span className="block text-[10px] text-slate-500 font-bold">
                     תאריך: {new Date().toLocaleDateString('he-IL')} {order.scheduledTime}
                   </span>
                 </div>
               </div>
 
               {/* Order Info Bar */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs bg-slate-100 p-2.5 rounded-lg border border-slate-200 font-sans">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs bg-slate-50 p-3 rounded-2xl border border-slate-200 font-sans">
                 <div>
-                  <span className="text-[10px] text-slate-500 block">שם הלקוח:</span>
-                  <span className="font-bold text-slate-900">{order.customerName}</span>
+                  <span className="text-[10px] text-slate-500 block font-bold">שם הלקוח:</span>
+                  <span className="font-black text-slate-900">{order.customerName}</span>
                 </div>
                 <div>
-                  <span className="text-[10px] text-slate-500 block">אתר אספקה:</span>
+                  <span className="text-[10px] text-slate-500 block font-bold">אתר אספקה:</span>
                   <span className="font-bold text-slate-900">{order.siteAddress}</span>
                 </div>
                 <div>
-                  <span className="text-[10px] text-slate-500 block">נהג ורכב:</span>
+                  <span className="text-[10px] text-slate-500 block font-bold">נהג ורכב:</span>
                   <span className="font-bold text-slate-900">{order.assignedDriver}</span>
                 </div>
                 <div>
-                  <span className="text-[10px] text-slate-500 block">מחסן יוצא:</span>
+                  <span className="text-[10px] text-slate-500 block font-bold">מחסן יוצא:</span>
                   <span className="font-bold text-slate-900">{order.warehouseName}</span>
                 </div>
               </div>
 
               {/* Items Table */}
-              <div className="border border-slate-300 rounded-lg overflow-hidden text-xs">
+              <div className="border border-slate-200 rounded-2xl overflow-hidden text-xs">
                 <table className="w-full text-right border-collapse">
                   <thead>
-                    <tr className="bg-slate-200 text-slate-800 font-bold text-[11px] border-b border-slate-300">
-                      <th className="p-2">#</th>
-                      <th className="p-2">מק"ט</th>
-                      <th className="p-2">תיאור המוצר</th>
-                      <th className="p-2">כמות</th>
-                      <th className="p-2">יחידה</th>
+                    <tr className="bg-slate-100 text-slate-800 font-black text-[11px] border-b border-slate-200">
+                      <th className="p-2.5">#</th>
+                      <th className="p-2.5">מק"ט</th>
+                      <th className="p-2.5">תיאור המוצר</th>
+                      <th className="p-2.5">כמות</th>
+                      <th className="p-2.5">יחידה</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-200">
+                  <tbody className="divide-y divide-slate-100">
                     {order.itemsList && order.itemsList.length > 0 ? (
                       order.itemsList.map((item, idx) => (
                         <tr key={idx} className="hover:bg-slate-50">
-                          <td className="p-2 font-mono text-slate-500">{idx + 1}</td>
-                          <td className="p-2 font-mono font-semibold text-slate-800">{item.sku}</td>
-                          <td className="p-2 font-medium text-slate-900">{item.name}</td>
-                          <td className="p-2 font-mono font-bold text-slate-900">{item.quantity}</td>
-                          <td className="p-2 text-slate-600">{item.unit}</td>
+                          <td className="p-2.5 font-mono text-slate-500 font-bold">{idx + 1}</td>
+                          <td className="p-2.5 font-mono font-black text-sky-700">{item.sku}</td>
+                          <td className="p-2.5 font-bold text-slate-900">{item.name}</td>
+                          <td className="p-2.5 font-mono font-black text-slate-900">{item.quantity}</td>
+                          <td className="p-2.5 text-slate-600 font-bold">{item.unit}</td>
                         </tr>
                       ))
                     ) : (
                       <tr>
-                        <td colSpan={5} className="p-3 text-center text-slate-600">
+                        <td colSpan={5} className="p-3 text-center text-slate-600 font-bold">
                           {order.itemsFormatted}
                         </td>
                       </tr>
@@ -452,14 +535,14 @@ export const OrderCardModal: React.FC<OrderCardModalProps> = ({
               </div>
 
               {/* Deposits & Signatures Footer */}
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2 border-t border-slate-300 text-xs">
-                <div className="text-[11px] text-slate-700 space-y-0.5">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2 border-t border-slate-200 text-xs">
+                <div className="text-[11px] text-slate-700 space-y-0.5 font-bold">
                   <p><strong>פקדונות:</strong> בלות: {order.bigBagsDeposit} | משטחים: {order.palletsDeposit}</p>
                   <p className="text-[10px] text-slate-500">הסחורה התקבלה במצב תקין ומושלם באתר הלקוח.</p>
                 </div>
 
-                <div className="border border-slate-300 p-2 rounded-lg bg-slate-50 text-center min-w-[160px]">
-                  <span className="text-[10px] text-slate-500 block mb-1">חתימת מקבל הסחורה</span>
+                <div className="border border-slate-200 p-2.5 rounded-2xl bg-slate-50 text-center min-w-[160px]">
+                  <span className="text-[10px] text-slate-500 block mb-1 font-bold">חתימת מקבל הסחורה</span>
                   {signatureUrl ? (
                     <img src={signatureUrl} alt="חתימה" className="h-10 mx-auto object-contain" />
                   ) : (
@@ -475,16 +558,20 @@ export const OrderCardModal: React.FC<OrderCardModalProps> = ({
             <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
               <button
                 onClick={() => setActiveTab('signature')}
-                className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition flex items-center gap-1.5"
+                className={`px-4 py-2.5 rounded-2xl text-xs font-bold transition flex items-center gap-1.5 border ${
+                  isLight
+                    ? 'bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-200'
+                    : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700'
+                }`}
               >
-                <PenTool className="w-3.5 h-3.5 text-cyan-400" />
+                <PenTool className="w-3.5 h-3.5 text-sky-600 dark:text-cyan-400" />
                 <span>{signatureUrl ? 'ערוך חתימה' : 'הוסף חתימה דיגיטלית'}</span>
               </button>
 
               <div className="flex items-center gap-2">
                 <button
                   onClick={handleCreateDeliveryNote}
-                  className="px-4 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs transition flex items-center gap-1.5 shadow-md shadow-cyan-500/20"
+                  className="px-5 py-2.5 rounded-2xl bg-sky-600 hover:bg-sky-500 text-white font-black text-xs transition flex items-center gap-1.5 shadow-md shadow-sky-600/30"
                 >
                   <CheckCircle2 className="w-4 h-4" />
                   <span>סנכרן לטבלת 'תעודות_משלוח_וחתימות' (טאב 3)</span>
@@ -497,3 +584,4 @@ export const OrderCardModal: React.FC<OrderCardModalProps> = ({
     </div>
   );
 };
+

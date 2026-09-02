@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { ThemeProvider, useTheme } from './context/ThemeContext';
 import { Header } from './components/Header';
 import { MorningDispatch } from './components/MorningDispatch';
 import { OrdersDashboard } from './components/OrdersDashboard';
@@ -14,8 +15,11 @@ import { INITIAL_ORDERS, INITIAL_DELIVERY_NOTES } from './data/mockData';
 import { Order, OrderStatus, SystemInfo, DeliveryNoteRecord } from './types';
 import { CheckCircle2, AlertCircle, Sparkles, X } from 'lucide-react';
 
-export function App() {
-  const [activeTab, setActiveTab] = useState<string>('noa-chat');
+function AppContent() {
+  const { theme } = useTheme();
+  const isLight = theme === 'light';
+
+  const [activeTab, setActiveTab] = useState<string>('orders');
   const [orders, setOrders] = useState<Order[]>(INITIAL_ORDERS);
   const [deliveryNotes, setDeliveryNotes] = useState<DeliveryNoteRecord[]>(INITIAL_DELIVERY_NOTES);
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
@@ -254,17 +258,25 @@ ${order.wazeUrl}
   };
 
   return (
-    <div className="min-h-screen bg-[#0B0F17] text-slate-100 flex flex-col selection:bg-cyan-500/30 selection:text-cyan-200">
+    <div className={`min-h-screen flex flex-col transition-colors duration-200 ${
+      isLight 
+        ? 'bg-[#F8FAFC] text-slate-900 selection:bg-sky-200 selection:text-sky-900' 
+        : 'bg-[#0B0F17] text-slate-100 selection:bg-cyan-500/30 selection:text-cyan-200'
+    }`}>
       {/* Toast Banner */}
       {toastMessage && (
-        <div className="fixed bottom-5 right-5 z-50 max-w-md shadow-2xl rounded-2xl p-4 flex items-center justify-between gap-3 border transition-all animate-bounce bg-slate-900 border-cyan-500/50 text-cyan-200">
-          <div className="flex items-center gap-2 text-xs font-semibold">
-            <CheckCircle2 className="w-4 h-4 text-cyan-400 shrink-0" />
+        <div className={`fixed bottom-5 right-5 z-50 max-w-md shadow-2xl rounded-2xl p-4 flex items-center justify-between gap-3 border transition-all animate-bounce ${
+          isLight
+            ? 'bg-white border-sky-300 text-sky-900 shadow-sky-200/50'
+            : 'bg-slate-900 border-cyan-500/50 text-cyan-200 shadow-cyan-950/50'
+        }`}>
+          <div className="flex items-center gap-2 text-xs font-bold">
+            <CheckCircle2 className={`w-4 h-4 shrink-0 ${isLight ? 'text-sky-600' : 'text-cyan-400'}`} />
             <span>{toastMessage.text}</span>
           </div>
           <button
             onClick={() => setToastMessage(null)}
-            className="text-slate-400 hover:text-white transition text-xs"
+            className="text-slate-400 hover:text-slate-700 dark:hover:text-white transition text-xs"
           >
             <X className="w-4 h-4" />
           </button>
@@ -381,4 +393,13 @@ ${order.wazeUrl}
   );
 }
 
+export function App() {
+  return (
+    <ThemeProvider>
+      <AppContent />
+    </ThemeProvider>
+  );
+}
+
 export default App;
+

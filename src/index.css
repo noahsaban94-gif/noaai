@@ -1,7 +1,17 @@
 @import "tailwindcss";
 
 :root {
-  color-scheme: dark;
+  color-scheme: light dark;
+}
+
+html.light {
+  background-color: #F8FAFC;
+  color: #0F172A;
+}
+
+html.dark {
+  background-color: #0B0F17;
+  color: #F1F5F9;
 }
 
 body {
@@ -9,29 +19,37 @@ body {
   padding: 0;
   direction: rtl;
   text-align: right;
-  font-family: 'Rubik', 'Assistant', sans-serif;
-  background-color: #0B0F17;
-  color: #F1F5F9;
+  font-family: 'Rubik', 'Assistant', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Custom scrollbar for dense tables and driver lists */
+/* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 
-::-webkit-scrollbar-track {
+.dark ::-webkit-scrollbar-track {
   background: #0F172A;
 }
 
-::-webkit-scrollbar-thumb {
+.light ::-webkit-scrollbar-track {
+  background: #F1F5F9;
+}
+
+.dark ::-webkit-scrollbar-thumb {
   background: #334155;
   border-radius: 9999px;
 }
 
+.light ::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 9999px;
+}
+
 ::-webkit-scrollbar-thumb:hover {
-  background: #06B6D4;
+  background: #0284C7;
 }
 
 /* Monospace font for SKUs and order numbers */
@@ -39,3 +57,11 @@ body {
   font-family: 'JetBrains Mono', monospace;
   letter-spacing: -0.02em;
 }
+
+/* Punchy Hebrew heavy headings and labels */
+.font-hebrew-heavy {
+  font-family: 'Rubik', sans-serif;
+  font-weight: 800;
+  letter-spacing: -0.015em;
+}
+

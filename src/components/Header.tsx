@@ -14,9 +14,12 @@ import {
   Clock,
   TrendingUp,
   MapPin,
-  BookOpen
+  BookOpen,
+  Sun,
+  Moon
 } from 'lucide-react';
 import { SABAN_DRIVERS, SABAN_WAREHOUSES } from '../data/mockData';
+import { useTheme } from '../context/ThemeContext';
 
 interface HeaderProps {
   activeTab: string;
@@ -39,6 +42,7 @@ export const Header: React.FC<HeaderProps> = ({
   unreadEmailCount,
   deliveryNotesCount
 }) => {
+  const { theme, toggleTheme } = useTheme();
   const [currentTime, setCurrentTime] = useState<string>('');
 
   useEffect(() => {
@@ -51,29 +55,35 @@ export const Header: React.FC<HeaderProps> = ({
     return () => clearInterval(interval);
   }, []);
 
+  const isLight = theme === 'light';
+
   return (
-    <header className="sticky top-0 z-40 bg-[#0B0F17]/95 backdrop-blur-md border-b border-slate-800/80 shadow-lg">
-      {/* Top Banner with Saban Branding, Clock & Direct Live Sync Indicators */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-2.5 flex flex-wrap items-center justify-between gap-3">
+    <header className={`sticky top-0 z-40 backdrop-blur-md border-b transition-colors duration-200 shadow-md ${
+      isLight 
+        ? 'bg-white/95 border-sky-100 text-slate-900' 
+        : 'bg-[#0B0F17]/95 border-slate-800/80 text-slate-100'
+    }`}>
+      {/* Top Banner with Saban Branding, Clock, Theme Switch & Direct Live Sync Indicators */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3">
         {/* Brand & Logo */}
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-600 via-blue-600 to-amber-500 p-0.5 shadow-md flex items-center justify-center">
-            <div className="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center">
-              <Truck className="w-5 h-5 text-cyan-400" />
+          <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-sky-500 via-blue-600 to-amber-500 p-0.5 shadow-md flex items-center justify-center">
+            <div className={`w-full h-full rounded-[14px] flex items-center justify-center ${isLight ? 'bg-white' : 'bg-slate-950'}`}>
+              <Truck className="w-5 h-5 text-sky-600 dark:text-cyan-400" />
             </div>
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-lg font-bold tracking-tight text-white flex items-center gap-1.5">
-                סידור נועה <span className="text-cyan-400 font-mono text-xs px-1.5 py-0.5 rounded bg-cyan-950/80 border border-cyan-800/60">AI</span>
+              <h1 className={`text-xl font-extrabold tracking-tight flex items-center gap-1.5 ${isLight ? 'text-slate-900' : 'text-white'}`}>
+                סידור נועה <span className="text-xs px-2 py-0.5 rounded-full font-black bg-sky-500/15 text-sky-600 dark:bg-cyan-950/80 dark:text-cyan-400 border border-sky-500/30">AI 🌹</span>
               </h1>
-              <span className="text-xs text-slate-400 font-medium hidden sm:inline-block">
+              <span className={`text-xs font-bold hidden sm:inline-block ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
                 ח. סבן חומרי בניין בע"מ
               </span>
             </div>
-            <p className="text-[11px] text-slate-400 flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-              סנכרון ליבה חי מול גיליון: <span className="font-mono text-cyan-300">1VA9J6n...</span>
+            <p className={`text-[11px] font-medium flex items-center gap-1.5 ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              סנכרון ליבה חי מול גיליון: <span className="font-mono font-bold text-sky-600 dark:text-cyan-300">1VA9J6n...</span>
             </p>
           </div>
         </div>
@@ -83,20 +93,50 @@ export const Header: React.FC<HeaderProps> = ({
           {SABAN_DRIVERS.map((driver) => (
             <div 
               key={driver.id} 
-              className="flex items-center gap-2 px-2.5 py-1 rounded-lg bg-slate-900/80 border border-slate-800 text-xs text-slate-300"
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-semibold ${
+                isLight 
+                  ? 'bg-sky-50/70 border-sky-200/80 text-slate-800' 
+                  : 'bg-slate-900/80 border-slate-800 text-slate-200'
+              }`}
             >
-              <div className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-              <span className="font-medium text-slate-200">{driver.name.split(' ')[0]}</span>
-              <span className="text-[10px] text-slate-400 font-mono">({driver.truckPlate})</span>
+              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+              <span className="font-bold">{driver.name.split(' ')[0]}</span>
+              <span className="text-[11px] opacity-70 font-mono font-medium">({driver.truckPlate})</span>
             </div>
           ))}
         </div>
 
-        {/* Quick Actions & Live Sheet Link */}
+        {/* Quick Actions, Theme Toggle & Live Sheet Link */}
         <div className="flex items-center gap-2">
+          {/* Theme Toggle Button: Dark / Light Mode */}
+          <button
+            onClick={toggleTheme}
+            id="theme-toggle-btn"
+            title={isLight ? 'מעבר למצב כהה (Dark Mode)' : 'מעבר למצב בהיר (Light Mode)'}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all shadow-sm border ${
+              isLight
+                ? 'bg-sky-50 hover:bg-sky-100 text-sky-800 border-sky-200 shadow-sky-100'
+                : 'bg-slate-800/90 hover:bg-slate-700 text-amber-300 border-slate-700 shadow-slate-900'
+            }`}
+          >
+            {isLight ? (
+              <>
+                <Moon className="w-4 h-4 text-sky-600" />
+                <span className="hidden sm:inline">מצב כהה</span>
+              </>
+            ) : (
+              <>
+                <Sun className="w-4 h-4 text-amber-400" />
+                <span className="hidden sm:inline">מצב בהיר</span>
+              </>
+            )}
+          </button>
+
           {/* Live Clock */}
-          <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-lg bg-slate-900/60 border border-slate-800 text-xs font-mono text-slate-300">
-            <Clock className="w-3.5 h-3.5 text-cyan-400" />
+          <div className={`hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-mono font-bold ${
+            isLight ? 'bg-slate-100/90 border-slate-200 text-slate-700' : 'bg-slate-900/60 border-slate-800 text-slate-300'
+          }`}>
+            <Clock className="w-3.5 h-3.5 text-sky-500 dark:text-cyan-400" />
             <span>{currentTime || '08:00:00'}</span>
           </div>
 
@@ -106,9 +146,13 @@ export const Header: React.FC<HeaderProps> = ({
             disabled={isSyncing}
             id="sync-sheet-btn"
             title="רענן סנכרון ישיר מול Google Sheets"
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700/80 text-xs font-medium text-slate-200 border border-slate-700 transition"
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition ${
+              isLight
+                ? 'bg-white hover:bg-slate-50 text-slate-800 border-slate-300 shadow-sm'
+                : 'bg-slate-800/80 hover:bg-slate-700/80 text-slate-200 border-slate-700'
+            }`}
           >
-            <RefreshCw className={`w-3.5 h-3.5 text-cyan-400 ${isSyncing ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-3.5 h-3.5 text-sky-500 dark:text-cyan-400 ${isSyncing ? 'animate-spin' : ''}`} />
             <span className="hidden md:inline">{isSyncing ? 'מסנכרן...' : 'סנכרן גיליון'}</span>
           </button>
 
@@ -118,40 +162,56 @@ export const Header: React.FC<HeaderProps> = ({
             target="_blank"
             rel="noopener noreferrer"
             id="open-google-sheet-link"
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-950/50 hover:bg-emerald-900/50 text-xs font-medium text-emerald-300 border border-emerald-800/60 transition"
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition shadow-sm ${
+              isLight
+                ? 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-emerald-300'
+                : 'bg-emerald-950/50 hover:bg-emerald-900/50 text-emerald-300 border-emerald-800/60'
+            }`}
           >
             <ExternalLink className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">גיליון מבצעי</span>
+            <span className="hidden sm:inline">גיליון חי</span>
           </a>
 
           {/* System Diagnostics Modal Trigger */}
           <button
             onClick={onOpenSyncModal}
             id="system-diagnostics-btn"
-            className="p-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700/80 text-slate-300 border border-slate-700 transition"
+            className={`p-2 rounded-xl border transition ${
+              isLight
+                ? 'bg-white hover:bg-slate-100 text-slate-700 border-slate-300'
+                : 'bg-slate-800/80 hover:bg-slate-700/80 text-slate-300 border-slate-700'
+            }`}
             title="מרכז סטטוס וממשקי מערכת"
           >
-            <Radio className="w-4 h-4 text-cyan-400" />
+            <Radio className="w-4 h-4 text-sky-600 dark:text-cyan-400" />
           </button>
         </div>
       </div>
 
-      {/* Navigation Tabs Bar (Direct representation of requested views) */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center gap-1 overflow-x-auto pb-2 scrollbar-none">
-        {/* View A: Noa AI Chat (WhatsApp Clone) */}
+      {/* Navigation Tabs Bar */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center gap-1.5 overflow-x-auto pb-2.5 pt-1 scrollbar-none">
+        {/* View A: Noa AI Chat */}
         <button
           onClick={() => setActiveTab('noa-chat')}
           id="tab-noa-chat"
-          className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition ${
+          className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-black whitespace-nowrap transition-all ${
             activeTab === 'noa-chat'
-              ? 'bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/20 font-bold'
+              ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/30'
+              : isLight
+              ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
               : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60'
           }`}
         >
           <Bot className="w-4 h-4" />
           <span>צ'אט נועה AI (קליטת הזמנות)</span>
-          <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-emerald-950 text-emerald-300 border border-emerald-800">
-            WhatsApp Clone
+          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+            activeTab === 'noa-chat'
+              ? 'bg-emerald-700 text-white'
+              : isLight
+              ? 'bg-emerald-100 text-emerald-800'
+              : 'bg-emerald-950 text-emerald-300 border border-emerald-800'
+          }`}>
+            WhatsApp
           </span>
         </button>
 
@@ -159,16 +219,22 @@ export const Header: React.FC<HeaderProps> = ({
         <button
           onClick={() => setActiveTab('orders')}
           id="tab-orders"
-          className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition ${
+          className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-black whitespace-nowrap transition-all ${
             activeTab === 'orders'
-              ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20 font-bold'
+              ? isLight
+                ? 'bg-sky-600 text-white shadow-md shadow-sky-600/30'
+                : 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20'
+              : isLight
+              ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
               : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60'
           }`}
         >
           <Layers className="w-4 h-4" />
           <span>דשבורד וסידור עבודה יומי</span>
-          <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono ${
-            activeTab === 'orders' ? 'bg-slate-950/20 text-slate-950' : 'bg-slate-800 text-slate-300'
+          <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${
+            activeTab === 'orders'
+              ? isLight ? 'bg-sky-700 text-white' : 'bg-slate-950 text-cyan-400'
+              : isLight ? 'bg-slate-200 text-slate-700' : 'bg-slate-800 text-slate-300'
           }`}>
             {totalOrders}
           </span>
@@ -178,15 +244,21 @@ export const Header: React.FC<HeaderProps> = ({
         <button
           onClick={() => setActiveTab('delivery-notes')}
           id="tab-delivery-notes"
-          className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition ${
+          className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-black whitespace-nowrap transition-all ${
             activeTab === 'delivery-notes'
-              ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20 font-bold'
+              ? isLight
+                ? 'bg-sky-600 text-white shadow-md shadow-sky-600/30'
+                : 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20'
+              : isLight
+              ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
               : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60'
           }`}
         >
           <FileText className="w-4 h-4" />
           <span>תעודות משלוח וחתימות</span>
-          <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">
+          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+            isLight ? 'bg-sky-100 text-sky-800' : 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30'
+          }`}>
             טאב 3
           </span>
         </button>
@@ -195,15 +267,21 @@ export const Header: React.FC<HeaderProps> = ({
         <button
           onClick={() => setActiveTab('dictionary')}
           id="tab-dictionary"
-          className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition ${
+          className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-black whitespace-nowrap transition-all ${
             activeTab === 'dictionary'
-              ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20 font-bold'
+              ? isLight
+                ? 'bg-sky-600 text-white shadow-md shadow-sky-600/30'
+                : 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20'
+              : isLight
+              ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
               : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60'
           }`}
         >
           <BookOpen className="w-4 h-4" />
           <span>מילון לוגיסטי ומק"טים</span>
-          <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-slate-800 text-slate-300">
+          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+            isLight ? 'bg-slate-200 text-slate-700' : 'bg-slate-800 text-slate-300'
+          }`}>
             טאב 1
           </span>
         </button>
@@ -212,23 +290,31 @@ export const Header: React.FC<HeaderProps> = ({
         <button
           onClick={() => setActiveTab('route-density')}
           id="tab-route-density"
-          className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition ${
+          className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-black whitespace-nowrap transition-all ${
             activeTab === 'route-density'
-              ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20 font-bold'
+              ? isLight
+                ? 'bg-sky-600 text-white shadow-md shadow-sky-600/30'
+                : 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20'
+              : isLight
+              ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
               : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60'
           }`}
         >
           <TrendingUp className="w-4 h-4" />
-          <span>מפת צפיפות ומסלולים D3</span>
+          <span>מפת צפיפות D3</span>
         </button>
 
         {/* Morning Dispatch */}
         <button
           onClick={() => setActiveTab('morning-dispatch')}
           id="tab-morning-dispatch"
-          className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition ${
+          className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-black whitespace-nowrap transition-all ${
             activeTab === 'morning-dispatch'
-              ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20 font-bold'
+              ? isLight
+                ? 'bg-sky-600 text-white shadow-md shadow-sky-600/30'
+                : 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20'
+              : isLight
+              ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
               : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60'
           }`}
         >
@@ -240,9 +326,13 @@ export const Header: React.FC<HeaderProps> = ({
         <button
           onClick={() => setActiveTab('driver-pwa')}
           id="tab-driver-pwa"
-          className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition ${
+          className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-black whitespace-nowrap transition-all ${
             activeTab === 'driver-pwa'
-              ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20 font-bold'
+              ? isLight
+                ? 'bg-sky-600 text-white shadow-md shadow-sky-600/30'
+                : 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20'
+              : isLight
+              ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
               : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60'
           }`}
         >
@@ -254,16 +344,20 @@ export const Header: React.FC<HeaderProps> = ({
         <button
           onClick={() => setActiveTab('email-orders')}
           id="tab-email-orders"
-          className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition ${
+          className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-black whitespace-nowrap transition-all ${
             activeTab === 'email-orders'
-              ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20 font-bold'
+              ? isLight
+                ? 'bg-sky-600 text-white shadow-md shadow-sky-600/30'
+                : 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20'
+              : isLight
+              ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
               : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60'
           }`}
         >
           <Mail className="w-4 h-4" />
           <span>הזמנות קומקס במייל</span>
           {unreadEmailCount > 0 && (
-            <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/30">
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-600 dark:text-amber-300 border border-amber-500/30">
               #{unreadEmailCount}
             </span>
           )}
@@ -273,9 +367,13 @@ export const Header: React.FC<HeaderProps> = ({
         <button
           onClick={() => setActiveTab('reconciliation')}
           id="tab-reconciliation"
-          className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition ${
+          className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-black whitespace-nowrap transition-all ${
             activeTab === 'reconciliation'
-              ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20 font-bold'
+              ? isLight
+                ? 'bg-sky-600 text-white shadow-md shadow-sky-600/30'
+                : 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20'
+              : isLight
+              ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
               : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60'
           }`}
         >
@@ -286,3 +384,4 @@ export const Header: React.FC<HeaderProps> = ({
     </header>
   );
 };
+
