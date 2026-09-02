@@ -34,7 +34,8 @@ import {
   Activity,
   Check,
   Phone,
-  Package
+  Package,
+  Loader2
 } from 'lucide-react';
 import { Order, OrderStatus, WarehouseId } from '../types';
 import { SABAN_DRIVERS } from '../data/mockData';
@@ -53,7 +54,7 @@ interface OrdersDashboardProps {
   onGenerateDeliveryNote?: (order: Order, signatureDataUrl?: string) => void;
   onNavigateToDensityMap?: () => void;
   onNavigateToNoaChat?: () => void;
-  onUpdateOrderDocument?: (orderNumber: string, docUrl: string, docName: string, directSheetViewUrl?: string) => void;
+  onUpdateOrderDocument?: (orderNumber: string, docUrl: string, docName: string, directSheetViewUrl?: string, orderFileBase64?: string) => void;
   showToast?: (msg: string, type?: 'success' | 'error' | 'info') => void;
 }
 
@@ -83,6 +84,7 @@ export const OrdersDashboard: React.FC<OrdersDashboardProps> = ({
   const [viewerModalOrder, setViewerModalOrder] = useState<Order | null>(null);
   const [isViewerModalOpen, setIsViewerModalOpen] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [loadingDriveOrder, setLoadingDriveOrder] = useState<string | null>(null);
 
   // Copy Order ID helper
   const handleCopyId = (id: string, e: React.MouseEvent) => {
@@ -90,6 +92,56 @@ export const OrdersDashboard: React.FC<OrdersDashboardProps> = ({
     navigator.clipboard.writeText(id);
     setCopiedId(id);
     setTimeout(() => setCopiedId(null), 2000);
+  };
+
+  // Dedicated API call to Google Drive to fetch direct order file link and customer folder by Customer ID
+  const handleFetchDriveFile = async (order: Order, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const orderNum = order.orderNumber || order.orderId || '';
+    const customerId = order.customerNumber || '607125';
+
+    setLoadingDriveOrder(orderNum);
+    showToast(`שולף קישור ישיר לקובץ הזמנה מ-Google Drive עבור לקוח #${customerId}...`, 'info');
+
+    try {
+      const res = await fetch(`/api/drive/customer-file/${encodeURIComponent(customerId)}?orderNumber=${encodeURIComponent(orderNum)}&customerName=${encodeURIComponent(order.customerName)}`);
+      const data = await res.json();
+
+      if (data && data.status === 'success') {
+        const updatedOrder: Order = {
+          ...order,
+          orderDocumentUrl: data.directDriveFileUrl || order.orderDocumentUrl,
+          customerFolderUrl: data.customerFolderUrl || order.customerFolderUrl,
+          directSheetViewUrl: data.directSheetViewUrl || order.directSheetViewUrl,
+          orderDocumentName: data.fileName || order.orderDocumentName
+        };
+
+        if (onUpdateOrderDocument) {
+          onUpdateOrderDocument(
+            orderNum,
+            data.directDriveFileUrl,
+            data.fileName || order.orderDocumentName || `הזמנת_לקוח_${orderNum}.pdf`,
+            data.directSheetViewUrl,
+            order.orderFileBase64
+          );
+        }
+
+        setViewerModalOrder(updatedOrder);
+        setIsViewerModalOpen(true);
+        showToast(`✓ נשלף בהצלחה קישור ישיר ל-Google Drive עבור ${order.customerName} (לקוח #${customerId})`, 'success');
+      } else {
+        setViewerModalOrder(order);
+        setIsViewerModalOpen(true);
+        showToast(`נפתחה תצוגת מסמך הזמנה ותיקיית Drive של ${order.customerName}`, 'info');
+      }
+    } catch (error) {
+      console.error('Error querying Google Drive API:', error);
+      setViewerModalOrder(order);
+      setIsViewerModalOpen(true);
+      showToast(`נפתחה תצוגת מסמך הזמנה ותיקיית הלקוח ב-Drive`, 'info');
+    } finally {
+      setLoadingDriveOrder(null);
+    }
   };
 
   // Filtered Orders
@@ -618,22 +670,25 @@ export const OrdersDashboard: React.FC<OrdersDashboardProps> = ({
                         {isCopied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
                       </button>
 
-                      {/* EYE BUTTON IN CARD TOP BAR */}
+                      {/* EYE BUTTON IN CARD TOP BAR - GOOGLE DRIVE API LOOKUP */}
                       <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setViewerModalOrder(order);
-                          setIsViewerModalOpen(true);
-                        }}
+                        onClick={(e) => handleFetchDriveFile(order, e)}
+                        disabled={loadingDriveOrder === orderIdStr}
                         id={`view-doc-top-${orderIdStr}`}
-                        className={`p-1.5 rounded-xl border transition flex items-center gap-1 shadow-sm ${
-                          isLight 
+                        className={`p-1.5 rounded-xl border transition flex items-center gap-1 shadow-sm active:scale-95 ${
+                          loadingDriveOrder === orderIdStr
+                            ? 'bg-amber-500 text-white border-amber-600 animate-pulse cursor-wait'
+                            : isLight 
                             ? 'bg-sky-50 hover:bg-sky-100 text-sky-700 border-sky-300 hover:border-sky-500' 
                             : 'bg-cyan-950/70 hover:bg-cyan-900 text-cyan-300 border-cyan-800 hover:border-cyan-500'
                         }`}
-                        title="👁️ צפייה והעלאת קובץ הזמנה לתיקיית לקוח"
+                        title="👁️ שליפת קישור ישיר לקובץ הזמנה מ-Google Drive לפי מזהה לקוח"
                       >
-                        <Eye className="w-3.5 h-3.5" />
+                        {loadingDriveOrder === orderIdStr ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin text-white" />
+                        ) : (
+                          <Eye className="w-3.5 h-3.5" />
+                        )}
                       </button>
                     </div>
 
@@ -842,22 +897,26 @@ export const OrdersDashboard: React.FC<OrdersDashboardProps> = ({
                   onClick={(e) => e.stopPropagation()}
                 >
                   <div className="flex items-center gap-1.5 flex-wrap">
-                    {/* Action 1: Eye - View & Upload Document to Customer Folder */}
+                    {/* Action 1: Eye - Google Drive API direct link lookup & viewer */}
                     <button
-                      onClick={() => {
-                        setViewerModalOrder(order);
-                        setIsViewerModalOpen(true);
-                      }}
+                      onClick={(e) => handleFetchDriveFile(order, e)}
+                      disabled={loadingDriveOrder === orderIdStr}
                       id={`view-doc-btn-${orderIdStr}`}
                       className={`px-3 py-2 rounded-2xl text-xs font-black flex items-center gap-1.5 transition-all border shadow-sm active:scale-95 ${
-                        isLight
+                        loadingDriveOrder === orderIdStr
+                          ? 'bg-amber-500 text-white border-amber-600 animate-pulse cursor-wait'
+                          : isLight
                           ? 'bg-sky-600 hover:bg-sky-500 text-white border-sky-700 shadow-sky-600/20'
                           : 'bg-cyan-600 hover:bg-cyan-500 text-white border-cyan-700 shadow-cyan-600/20'
                       }`}
-                      title="👁️ צפייה והעלאת קובץ הזמנה לתיקיית לקוח ועדכון בגיליון"
+                      title="👁️ שליפת קישור ישיר לקובץ הזמנה מ-Google Drive לפי מזהה לקוח"
                     >
-                      <Eye className="w-3.5 h-3.5" />
-                      <span>קובץ 👁️</span>
+                      {loadingDriveOrder === orderIdStr ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin text-white" />
+                      ) : (
+                        <Eye className="w-3.5 h-3.5" />
+                      )}
+                      <span>{loadingDriveOrder === orderIdStr ? 'שולף מ-Drive...' : 'קובץ Drive 👁️'}</span>
                     </button>
 
                     {/* Action 2: Send WhatsApp to Driver */}
@@ -971,17 +1030,20 @@ export const OrdersDashboard: React.FC<OrdersDashboardProps> = ({
                             #{order.orderId || order.orderNumber}
                           </span>
                           <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setViewerModalOrder(order);
-                              setIsViewerModalOpen(true);
-                            }}
+                            onClick={(e) => handleFetchDriveFile(order, e)}
+                            disabled={loadingDriveOrder === (order.orderNumber || order.orderId)}
                             className={`p-1 rounded-lg border transition ${
-                              isLight ? 'bg-sky-50 text-sky-700 border-sky-200 hover:bg-sky-100' : 'bg-slate-900 text-cyan-300 border-slate-700 hover:bg-slate-800'
+                              loadingDriveOrder === (order.orderNumber || order.orderId)
+                                ? 'bg-amber-500 text-white border-amber-600 animate-pulse'
+                                : isLight ? 'bg-sky-50 text-sky-700 border-sky-200 hover:bg-sky-100' : 'bg-slate-900 text-cyan-300 border-slate-700 hover:bg-slate-800'
                             }`}
-                            title="👁️ צפייה והעלאת קובץ הזמנה לתיקיית לקוח"
+                            title="👁️ שליפת קישור ישיר לקובץ הזמנה מ-Google Drive לפי מזהה לקוח"
                           >
-                            <Eye className="w-3 h-3" />
+                            {loadingDriveOrder === (order.orderNumber || order.orderId) ? (
+                              <Loader2 className="w-3 h-3 animate-spin text-white" />
+                            ) : (
+                              <Eye className="w-3 h-3" />
+                            )}
                           </button>
                         </div>
                         <span className={`text-[10px] font-bold px-2 py-0.5 rounded-lg border ${
@@ -1158,21 +1220,25 @@ export const OrdersDashboard: React.FC<OrdersDashboardProps> = ({
                     </td>
                     <td className="p-4 text-center" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center justify-center gap-1.5">
-                        {/* Eye Document Button */}
+                        {/* Eye Document Button with Google Drive API lookup */}
                         <button
-                          onClick={() => {
-                            setViewerModalOrder(order);
-                            setIsViewerModalOpen(true);
-                          }}
-                          className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition flex items-center gap-1 ${
-                            isLight
+                          onClick={(e) => handleFetchDriveFile(order, e)}
+                          disabled={loadingDriveOrder === (order.orderNumber || order.orderId)}
+                          className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition flex items-center gap-1.5 shadow-sm active:scale-95 ${
+                            loadingDriveOrder === (order.orderNumber || order.orderId)
+                              ? 'bg-amber-500 text-white border-amber-600 animate-pulse'
+                              : isLight
                               ? 'bg-sky-50 hover:bg-sky-100 text-sky-800 border-sky-300'
                               : 'bg-cyan-950/70 hover:bg-cyan-900 text-cyan-300 border-cyan-800'
                           }`}
-                          title="👁️ צפייה והעלאת קובץ הזמנה לתיקיית לקוח"
+                          title="👁️ שליפת קישור ישיר לקובץ הזמנה מ-Google Drive לפי מזהה לקוח"
                         >
-                          <Eye className={`w-3.5 h-3.5 ${isLight ? 'text-sky-600' : 'text-cyan-400'}`} />
-                          <span>מסמך 👁️</span>
+                          {loadingDriveOrder === (order.orderNumber || order.orderId) ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin text-white" />
+                          ) : (
+                            <Eye className={`w-3.5 h-3.5 ${isLight ? 'text-sky-600' : 'text-cyan-400'}`} />
+                          )}
+                          <span>{loadingDriveOrder === (order.orderNumber || order.orderId) ? 'שולף...' : 'Drive 👁️'}</span>
                         </button>
                         <button
                           onClick={() => setSelectedOrder(order)}

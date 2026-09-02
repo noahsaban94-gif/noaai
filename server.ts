@@ -724,6 +724,65 @@ app.get('/api/customer-folder/:customerNumber', (req, res) => {
   });
 });
 
+// GET /api/drive/customer-file/:customerNumber - API call to Google Drive to fetch direct order file link by Customer ID
+app.get('/api/drive/customer-file/:customerNumber', async (req, res) => {
+  const { customerNumber } = req.params;
+  const orderNumber = (req.query.orderNumber as string) || '';
+  const customerName = (req.query.customerName as string) || '';
+
+  const rootCustomerFolderId = '1JGNbTlmB5yBH_cLOApKTvE39CEL6roFF';
+  const customerFolderUrl = `https://drive.google.com/drive/folders/${rootCustomerFolderId}?usp=drive_link#customer_${customerNumber}`;
+  const directSheetViewUrl = `https://docs.google.com/spreadsheets/d/${TARGET_SPREADSHEET_ID}/edit#gid=0&order=${orderNumber}`;
+
+  // Call Google Apps Script Web App to get actual live folder / file link from Google Drive
+  const gasData = await fetchGASJson(`${GAS_ENDPOINT_URL}?action=getCustomerFolder&customerNumber=${encodeURIComponent(customerNumber)}&customerName=${encodeURIComponent(customerName)}&orderNumber=${encodeURIComponent(orderNumber)}`);
+
+  const fileDocName = `הזמנת_לקוח_${orderNumber || customerNumber}_${customerName ? customerName.replace(/\s+/g, '_') : 'סבן'}.pdf`;
+  const directDriveFileUrl = gasData?.fileUrl || gasData?.folderUrl || `https://drive.google.com/drive/folders/${rootCustomerFolderId}?usp=drive_link#customer_${customerNumber}`;
+
+  return res.json({
+    status: 'success',
+    customerNumber,
+    customerName,
+    orderNumber,
+    fileName: fileDocName,
+    directDriveFileUrl: directDriveFileUrl,
+    customerFolderUrl: gasData?.folderUrl || customerFolderUrl,
+    directSheetViewUrl,
+    folderId: gasData?.folderId || rootCustomerFolderId,
+    timestamp: new Date().toISOString(),
+    message: `נשלף בהצלחה קישור ישיר ל-Google Drive עבור לקוח #${customerNumber}`
+  });
+});
+
+// GET /api/orders/:orderNumber/drive-lookup - Direct lookup for an order in Google Drive
+app.get('/api/orders/:orderNumber/drive-lookup', async (req, res) => {
+  const { orderNumber } = req.params;
+  const customerNumber = (req.query.customerNumber as string) || '607125';
+  const customerName = (req.query.customerName as string) || '';
+
+  const rootCustomerFolderId = '1JGNbTlmB5yBH_cLOApKTvE39CEL6roFF';
+  const customerFolderUrl = `https://drive.google.com/drive/folders/${rootCustomerFolderId}?usp=drive_link#customer_${customerNumber}`;
+  const directSheetViewUrl = `https://docs.google.com/spreadsheets/d/${TARGET_SPREADSHEET_ID}/edit#gid=0&order=${orderNumber}`;
+
+  const gasData = await fetchGASJson(`${GAS_ENDPOINT_URL}?action=getCustomerFolder&customerNumber=${encodeURIComponent(customerNumber)}&customerName=${encodeURIComponent(customerName)}&orderNumber=${encodeURIComponent(orderNumber)}`);
+
+  const fileDocName = `הזמנת_לקוח_${orderNumber}_${customerName ? customerName.replace(/\s+/g, '_') : 'סבן'}.pdf`;
+  const directDriveFileUrl = gasData?.fileUrl || gasData?.folderUrl || `https://drive.google.com/drive/folders/${rootCustomerFolderId}?usp=drive_link#customer_${customerNumber}`;
+
+  return res.json({
+    status: 'success',
+    orderNumber,
+    customerNumber,
+    customerName,
+    fileName: fileDocName,
+    directDriveFileUrl,
+    customerFolderUrl: gasData?.folderUrl || customerFolderUrl,
+    directSheetViewUrl,
+    timestamp: new Date().toISOString()
+  });
+});
+
 // POST /api/gas/reconcile - Update delivery note and reconciliation in sheet
 app.post('/api/gas/reconcile', async (req, res) => {
   const data = await fetchGASJson(GAS_ENDPOINT_URL, {
