@@ -14,7 +14,8 @@ import {
   Send,
   Sparkles,
   Truck,
-  MapPin
+  MapPin,
+  Camera
 } from 'lucide-react';
 import { DeliveryNoteRecord, Order } from '../types';
 
@@ -24,6 +25,7 @@ interface DeliveryNotesViewProps {
   onToggleSync: (noteId: string) => void;
   onOpenOrderModal: (order: Order) => void;
   onManualSyncSheet: () => void;
+  onOpenScanner?: (order?: Order) => void;
 }
 
 export const DeliveryNotesView: React.FC<DeliveryNotesViewProps> = ({
@@ -31,7 +33,8 @@ export const DeliveryNotesView: React.FC<DeliveryNotesViewProps> = ({
   orders,
   onToggleSync,
   onOpenOrderModal,
-  onManualSyncSheet
+  onManualSyncSheet,
+  onOpenScanner
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [signatureFilter, setSignatureFilter] = useState<'all' | 'signed' | 'unsigned'>('all');
@@ -83,14 +86,26 @@ export const DeliveryNotesView: React.FC<DeliveryNotesViewProps> = ({
           </p>
         </div>
 
-        {/* Action Button */}
-        <button
-          onClick={onManualSyncSheet}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs transition shadow-md shadow-cyan-500/20"
-        >
-          <RefreshCw className="w-4 h-4" />
-          <span>סנכרן תעודות לגיליון הראשי</span>
-        </button>
+        {/* Action Buttons */}
+        <div className="flex flex-wrap items-center gap-2.5">
+          {onOpenScanner && (
+            <button
+              onClick={() => onOpenScanner()}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black text-xs transition shadow-md shadow-emerald-500/20 active:scale-95"
+            >
+              <Camera className="w-4 h-4" />
+              <span>סרוק חתימה במצלמה</span>
+            </button>
+          )}
+
+          <button
+            onClick={onManualSyncSheet}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs transition shadow-md shadow-cyan-500/20"
+          >
+            <RefreshCw className="w-4 h-4" />
+            <span>סנכרן תעודות לגיליון הראשי</span>
+          </button>
+        </div>
       </div>
 
       {/* KPI Cards */}
@@ -259,15 +274,50 @@ export const DeliveryNotesView: React.FC<DeliveryNotesViewProps> = ({
                       </button>
                     </td>
                     <td className="p-3.5">
-                      {matchedOrder && (
-                        <button
-                          onClick={() => onOpenOrderModal(matchedOrder)}
-                          className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] transition flex items-center gap-1"
-                        >
-                          <Eye className="w-3.5 h-3.5 text-cyan-400" />
-                          <span>כרטיס הזמנה</span>
-                        </button>
-                      )}
+                      <div className="flex items-center gap-1.5">
+                        {onOpenScanner && (
+                          <button
+                            onClick={() => onOpenScanner(matchedOrder || {
+                              orderNumber: note.orderId,
+                              customerNumber: '607125',
+                              customerName: note.customerName,
+                              siteAddress: note.destination,
+                              city: '',
+                              warehouse: '4_HARASH',
+                              warehouseName: '🏭 4️⃣ החרש (מלט וטיח)',
+                              itemsFormatted: note.itemsDetails,
+                              bigBagsDeposit: 0,
+                              palletsDeposit: 0,
+                              assignedDriver: note.driver,
+                              status: 'סופק בהצלחה',
+                              deliveryNote: note.id,
+                              wazeUrl: 'https://waze.com',
+                              totalWeightKg: 0,
+                              isCraneRequired: false,
+                              scheduledTime: '08:00'
+                            })}
+                            className={`px-2 py-1 rounded-lg text-[11px] font-bold transition flex items-center gap-1 border ${
+                              note.isSigned
+                                ? 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700'
+                                : 'bg-emerald-950 hover:bg-emerald-900 text-emerald-300 border-emerald-800'
+                            }`}
+                            title="סרוק חתימה פיזית באמצעות המצלמה לתעודה זו"
+                          >
+                            <Camera className="w-3.5 h-3.5 text-emerald-400" />
+                            <span>{note.isSigned ? 'סרוק שוב' : 'סרוק חתימה'}</span>
+                          </button>
+                        )}
+
+                        {matchedOrder && (
+                          <button
+                            onClick={() => onOpenOrderModal(matchedOrder)}
+                            className="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] transition flex items-center gap-1 border border-slate-700"
+                          >
+                            <Eye className="w-3.5 h-3.5 text-cyan-400" />
+                            <span>כרטיס</span>
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 );

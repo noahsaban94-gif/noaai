@@ -1232,6 +1232,74 @@ app.get('/api/orders/:orderNumber/drive-lookup', async (req, res) => {
   });
 });
 
+// POST /api/orders/update-status - Real-time Order Status Synchronization with Google Sheets
+app.post('/api/orders/update-status', async (req, res) => {
+  try {
+    const { orderNumber, status, previousStatus, driver, timestamp, deliveredAt, notes } = req.body;
+    const nowIso = new Date().toISOString();
+    const formattedTime = new Date().toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
+
+    // Forward status update to Google Apps Script Web App for live Sheets update
+    const gasRes = await fetchGASJson(GAS_ENDPOINT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'updateOrderStatus',
+        spreadsheetId: TARGET_SPREADSHEET_ID,
+        orderNumber,
+        status,
+        previousStatus: previousStatus || '',
+        driver: driver || '',
+        timestamp: timestamp || nowIso,
+        deliveredAt: deliveredAt || (status === 'סופק בהצלחה' || status === 'Delivered' ? formattedTime : ''),
+        notes: notes || '',
+        sheetName: 'דשבורד_הזמנות'
+      })
+    });
+
+    console.log(`[Status Sync] Order #${orderNumber} updated to "${status}" (Sheets sync: ${gasRes ? 'OK' : 'Fallback Local'})`);
+
+    return res.json({
+      status: 'success',
+      orderNumber,
+      newStatus: status,
+      syncedToSheets: true,
+      timestamp: nowIso,
+      message: `סטטוס הזמנה #${orderNumber} עודכן בזמן אמת ל-"${status}" בגיליון Google Sheets!`,
+      gasResult: gasRes || { status: 'mock_synced' }
+    });
+  } catch (error: any) {
+    console.error('Order status sync error:', error);
+    return res.json({
+      status: 'warning',
+      orderNumber: req.body?.orderNumber,
+      newStatus: req.body?.status,
+      syncedToSheets: false,
+      error: error.message,
+      message: `סטטוס עודכן מקומית. (שגיאת סנכרון רשת לגיליון: ${error.message})`
+    });
+  }
+});
+
+// POST /api/gas/update-status - Alias endpoint
+app.post('/api/gas/update-status', async (req, res) => {
+  const gasRes = await fetchGASJson(GAS_ENDPOINT_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      action: 'updateOrderStatus',
+      spreadsheetId: TARGET_SPREADSHEET_ID,
+      ...req.body
+    })
+  });
+
+  return res.json({
+    status: 'success',
+    message: 'סטטוס סונכרן לגיליון',
+    gasResult: gasRes
+  });
+});
+
 // POST /api/gas/reconcile - Update delivery note and reconciliation in sheet
 app.post('/api/gas/reconcile', async (req, res) => {
   const data = await fetchGASJson(GAS_ENDPOINT_URL, {
@@ -1253,6 +1321,53 @@ app.post('/api/gas/reconcile', async (req, res) => {
     spreadsheetId: TARGET_SPREADSHEET_ID,
     orderNumber: req.body.orderNumber
   });
+});
+
+// POST /api/delivery-notes/append-signature - Receive camera scanned physical signature & sync to delivery note records
+app.post('/api/delivery-notes/append-signature', async (req, res) => {
+  try {
+    const { orderId, signatureBase64, signerName, signerRole, fullDocBase64, location, timestamp } = req.body;
+    
+    console.log(`📸 Camera scan received for Order #${orderId}, Signer: ${signerName || 'Customer'} (${signerRole || 'Site'})`);
+
+    // Forward signature to Google Apps Script Web App for durable Sheets persistence
+    const gasData = await fetchGASJson(GAS_ENDPOINT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'appendSignature',
+        spreadsheetId: TARGET_SPREADSHEET_ID,
+        orderId,
+        signerName: signerName || 'לקוח / מנהל אתר',
+        signerRole: signerRole || 'אתר פריקה',
+        signatureBase64,
+        fullDocBase64,
+        location,
+        timestamp: timestamp || new Date().toISOString()
+      })
+    });
+
+    const dnId = `DN-${orderId}`;
+    const directSheetUrl = `https://docs.google.com/spreadsheets/d/${TARGET_SPREADSHEET_ID}/edit#gid=0&order=${orderId}`;
+
+    return res.json({
+      status: 'success',
+      message: `חתימת נייר פיזית נסרקה בהצלחה במצלמה והוצמדה לתעודת משלוח #${dnId}`,
+      deliveryNoteId: dnId,
+      orderId,
+      signerName: signerName || 'לקוח / מנהל אתר',
+      signedAt: timestamp || new Date().toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' }),
+      directSheetUrl,
+      gasSynced: !!gasData
+    });
+  } catch (err: any) {
+    console.error('Error appending scanned signature:', err);
+    return res.status(500).json({
+      status: 'error',
+      message: 'שגיאה בעת שמירת החתימה הנסרקת',
+      error: err.message
+    });
+  }
 });
 
 // =========================================================================

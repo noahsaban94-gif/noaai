@@ -21,7 +21,8 @@ import {
   Package,
   Boxes,
   Scale,
-  Eye
+  Eye,
+  Camera
 } from 'lucide-react';
 import { Order, OrderStatus } from '../types';
 import { useTheme } from '../context/ThemeContext';
@@ -31,13 +32,15 @@ interface OrderCardModalProps {
   onClose: () => void;
   onUpdateStatus?: (orderNumber: string, status: OrderStatus) => void;
   onGenerateDeliveryNote?: (order: Order, signatureDataUrl?: string) => void;
+  onOpenScanner?: (order: Order) => void;
 }
 
 export const OrderCardModal: React.FC<OrderCardModalProps> = ({
   order,
   onClose,
   onUpdateStatus,
-  onGenerateDeliveryNote
+  onGenerateDeliveryNote,
+  onOpenScanner
 }) => {
   if (!order) return null;
 
@@ -443,18 +446,38 @@ export const OrderCardModal: React.FC<OrderCardModalProps> = ({
             </div>
 
             {/* Signature Controls */}
-            <div className="flex items-center justify-between gap-3 pt-2">
-              <button
-                onClick={clearSignature}
-                className={`px-4 py-2 rounded-2xl text-xs font-bold transition flex items-center gap-1.5 border ${
-                  isLight 
-                    ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200' 
-                    : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700'
-                }`}
-              >
-                <Trash2 className="w-3.5 h-3.5 text-rose-500" />
-                <span>נקה חתימה</span>
-              </button>
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={clearSignature}
+                  className={`px-4 py-2 rounded-2xl text-xs font-bold transition flex items-center gap-1.5 border ${
+                    isLight 
+                      ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200' 
+                      : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700'
+                  }`}
+                >
+                  <Trash2 className="w-3.5 h-3.5 text-rose-500" />
+                  <span>נקה חתימה</span>
+                </button>
+
+                {onOpenScanner && (
+                  <button
+                    onClick={() => {
+                      onClose();
+                      onOpenScanner(order);
+                    }}
+                    className={`px-4 py-2 rounded-2xl text-xs font-bold transition flex items-center gap-1.5 border ${
+                      isLight
+                        ? 'bg-sky-50 hover:bg-sky-100 text-sky-800 border-sky-200'
+                        : 'bg-cyan-950/80 hover:bg-cyan-900 text-cyan-300 border-cyan-800'
+                    }`}
+                    title="סרוק חתימה פיזית מנייר באמצעות המצלמה"
+                  >
+                    <Camera className="w-4 h-4 text-cyan-500" />
+                    <span>סרוק חתימה במצלמה</span>
+                  </button>
+                )}
+              </div>
 
               <div className="flex items-center gap-2">
                 <button

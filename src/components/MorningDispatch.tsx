@@ -21,6 +21,7 @@ import {
   MessageSquare,
   UserCheck,
   Eye,
+  EyeOff,
   Copy,
   ExternalLink
 } from 'lucide-react';
@@ -49,16 +50,22 @@ export const MorningDispatch: React.FC<MorningDispatchProps> = ({
   const [playingOrderId, setPlayingOrderId] = useState<string | null>(null);
   const [audioLoading, setAudioLoading] = useState<boolean>(false);
   const [activeDriverFilter, setActiveDriverFilter] = useState<string>('all');
+  const [hideDelivered, setHideDelivered] = useState<boolean>(false);
   const [isSendingMakeReport, setIsSendingMakeReport] = useState<boolean>(false);
   const [makeSuccessBanner, setMakeSuccessBanner] = useState<string | null>(null);
   const [previewModal, setPreviewModal] = useState<{ title: string; content: string; waUrl?: string } | null>(null);
 
+  const isDeliveredStatus = (status: string) => status === 'Delivered' || status === 'סופק בהצלחה';
+
   const filteredOrders = orders.filter(order => {
+    if (hideDelivered && isDeliveredStatus(order.status)) return false;
     if (activeDriverFilter === 'all') return true;
     if (activeDriverFilter === 'hikmat') return order.assignedDriver.includes('חכמת');
     if (activeDriverFilter === 'ali') return order.assignedDriver.includes('עלי');
     return true;
   });
+
+  const deliveredCount = orders.filter(o => isDeliveredStatus(o.status)).length;
 
   const totalWeight = orders.reduce((sum, o) => sum + (o.totalWeightKg || 0), 0);
   const totalPallets = orders.reduce((sum, o) => sum + (o.palletsDeposit || 0), 0);
@@ -270,43 +277,68 @@ export const MorningDispatch: React.FC<MorningDispatchProps> = ({
         </div>
       </div>
 
-      {/* Driver Filtering Tabs */}
-      <div className="flex items-center gap-2 border-b border-slate-800 pb-2 overflow-x-auto">
+      {/* Driver Filtering Tabs & Hide Delivered Toggle */}
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-2">
+        <div className="flex items-center gap-2 overflow-x-auto">
+          <button
+            onClick={() => setActiveDriverFilter('all')}
+            className={`px-4 py-2 rounded-xl text-xs font-semibold transition whitespace-nowrap ${
+              activeDriverFilter === 'all'
+                ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20'
+                : 'bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800'
+            }`}
+          >
+            כל הנהגים ({orders.length})
+          </button>
+          <button
+            onClick={() => setActiveDriverFilter('hikmat')}
+            className={`px-4 py-2 rounded-xl text-xs font-semibold transition whitespace-nowrap flex items-center gap-1.5 ${
+              activeDriverFilter === 'hikmat'
+                ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20'
+                : 'bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800'
+            }`}
+          >
+            <span>🏗️ חכמת (מרצדס מנוף 26ט)</span>
+            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-slate-800 text-cyan-300 font-mono">
+              {orders.filter(o => o.assignedDriver.includes('חכמת')).length}
+            </span>
+          </button>
+          <button
+            onClick={() => setActiveDriverFilter('ali')}
+            className={`px-4 py-2 rounded-xl text-xs font-semibold transition whitespace-nowrap flex items-center gap-1.5 ${
+              activeDriverFilter === 'ali'
+                ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20'
+                : 'bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800'
+            }`}
+          >
+            <span>🚚 עלי (משאית איסוזו 15ט)</span>
+            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-slate-800 text-cyan-300 font-mono">
+              {orders.filter(o => o.assignedDriver.includes('עלי')).length}
+            </span>
+          </button>
+        </div>
+
+        {/* Hide Delivered Orders Toggle */}
         <button
-          onClick={() => setActiveDriverFilter('all')}
-          className={`px-4 py-2 rounded-xl text-xs font-semibold transition whitespace-nowrap ${
-            activeDriverFilter === 'all'
-              ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20'
-              : 'bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800'
+          onClick={() => setHideDelivered(!hideDelivered)}
+          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 border shadow-sm ${
+            hideDelivered
+              ? 'bg-emerald-500 text-slate-950 font-black border-emerald-400 shadow-emerald-500/20'
+              : 'bg-slate-900 text-slate-300 hover:text-white border-slate-800'
           }`}
+          title="הסתר או הצג משלוחים שכבר סופקו בהצלחה"
         >
-          כל הנהגים ({orders.length})
-        </button>
-        <button
-          onClick={() => setActiveDriverFilter('hikmat')}
-          className={`px-4 py-2 rounded-xl text-xs font-semibold transition whitespace-nowrap flex items-center gap-1.5 ${
-            activeDriverFilter === 'hikmat'
-              ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20'
-              : 'bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800'
-          }`}
-        >
-          <span>🏗️ חכמת (מרצדס מנוף 26ט)</span>
-          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-slate-800 text-cyan-300 font-mono">
-            {orders.filter(o => o.assignedDriver.includes('חכמת')).length}
-          </span>
-        </button>
-        <button
-          onClick={() => setActiveDriverFilter('ali')}
-          className={`px-4 py-2 rounded-xl text-xs font-semibold transition whitespace-nowrap flex items-center gap-1.5 ${
-            activeDriverFilter === 'ali'
-              ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20'
-              : 'bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800'
-          }`}
-        >
-          <span>🚚 עלי (משאית איסוזו 15ט)</span>
-          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-slate-800 text-cyan-300 font-mono">
-            {orders.filter(o => o.assignedDriver.includes('עלי')).length}
-          </span>
+          {hideDelivered ? (
+            <>
+              <EyeOff className="w-3.5 h-3.5" />
+              <span>מוסתר סופקו ({deliveredCount})</span>
+            </>
+          ) : (
+            <>
+              <Eye className="w-3.5 h-3.5 text-emerald-400" />
+              <span>הסתר סופקו ({deliveredCount})</span>
+            </>
+          )}
         </button>
       </div>
 

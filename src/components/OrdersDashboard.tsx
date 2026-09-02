@@ -18,11 +18,13 @@ import {
   LayoutGrid,
   List,
   Eye,
+  EyeOff,
   AlertCircle,
   TrendingUp,
   FileText,
   Calendar,
   ChevronRight,
+  ChevronDown,
   ArrowRight,
   ShieldCheck,
   Boxes,
@@ -35,7 +37,8 @@ import {
   Check,
   Phone,
   Package,
-  Loader2
+  Loader2,
+  CheckCheck
 } from 'lucide-react';
 import { Order, OrderStatus, WarehouseId } from '../types';
 import { SABAN_DRIVERS } from '../data/mockData';
@@ -56,6 +59,7 @@ interface OrdersDashboardProps {
   onNavigateToNoaChat?: () => void;
   onUpdateOrderDocument?: (orderNumber: string, docUrl: string, docName: string, directSheetViewUrl?: string, orderFileBase64?: string) => void;
   showToast?: (msg: string, type?: 'success' | 'error' | 'info') => void;
+  onOpenScanner?: (order: Order) => void;
 }
 
 export const OrdersDashboard: React.FC<OrdersDashboardProps> = ({
@@ -69,7 +73,8 @@ export const OrdersDashboard: React.FC<OrdersDashboardProps> = ({
   onNavigateToDensityMap,
   onNavigateToNoaChat,
   onUpdateOrderDocument,
-  showToast = () => {}
+  showToast = () => {},
+  onOpenScanner
 }) => {
   const { theme } = useTheme();
   const isLight = theme === 'light';
@@ -78,6 +83,9 @@ export const OrdersDashboard: React.FC<OrdersDashboardProps> = ({
   const [warehouseFilter, setWarehouseFilter] = useState<'all' | WarehouseId>('all');
   const [driverFilter, setDriverFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [hideDelivered, setHideDelivered] = useState(false);
+  const [animatingDeliveredId, setAnimatingDeliveredId] = useState<string | null>(null);
+  const [isCompletedSectionOpen, setIsCompletedSectionOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'cards' | 'kanban' | 'grid'>('cards');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
@@ -85,6 +93,22 @@ export const OrdersDashboard: React.FC<OrdersDashboardProps> = ({
   const [isViewerModalOpen, setIsViewerModalOpen] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [loadingDriveOrder, setLoadingDriveOrder] = useState<string | null>(null);
+
+  // Status Change Handler with Animation & Instant Real-time Sync
+  const handleQuickStatusChange = (order: Order, newStatus: OrderStatus, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    const orderNum = order.orderNumber || order.orderId || '';
+    
+    // If setting to Delivered, trigger eye-catching completion animation
+    if (newStatus === 'Delivered' || newStatus === 'סופק בהצלחה') {
+      setAnimatingDeliveredId(orderNum);
+      setTimeout(() => {
+        setAnimatingDeliveredId(null);
+      }, 1600);
+    }
+
+    onUpdateStatus(orderNum, newStatus);
+  };
 
   // Copy Order ID helper
   const handleCopyId = (id: string, e: React.MouseEvent) => {
@@ -145,7 +169,7 @@ export const OrdersDashboard: React.FC<OrdersDashboardProps> = ({
   };
 
   // Filtered Orders
-  const filteredOrders = orders.filter((order) => {
+  const allFilteredOrders = orders.filter((order) => {
     const customer = order.customerName || '';
     const num = order.orderNumber || order.orderId || '';
     const city = order.city || '';
@@ -168,11 +192,23 @@ export const OrdersDashboard: React.FC<OrdersDashboardProps> = ({
     return matchesSearch && matchesWarehouse && matchesDriver && matchesStatus;
   });
 
+  // Separate Active vs Delivered orders for clean dashboard view
+  const isDeliveredStatus = (status: OrderStatus) => status === 'Delivered' || status === 'סופק בהצלחה';
+
+  const filteredOrders = allFilteredOrders.filter((order) => {
+    if (hideDelivered && statusFilter === 'all') {
+      return !isDeliveredStatus(order.status);
+    }
+    return true;
+  });
+
+  const completedDeliveredOrders = allFilteredOrders.filter(order => isDeliveredStatus(order.status));
+
   // KPI Calculations
   const totalOrdersCount = orders.length;
   const pendingOrdersCount = orders.filter(o => o.status === 'Pending' || o.status === 'בסידור עבודה').length;
   const inProgressOrdersCount = orders.filter(o => o.status === 'In Progress' || o.status === 'בדרך לאתר' || o.status === 'הועמס במחסן').length;
-  const deliveredOrdersCount = orders.filter(o => o.status === 'Delivered' || o.status === 'סופק בהצלחה').length;
+  const deliveredOrdersCount = orders.filter(o => isDeliveredStatus(o.status)).length;
   const totalWeightToday = orders.reduce((acc, o) => acc + (o.totalWeightKg || 0), 0);
   const completionPercentage = Math.round((deliveredOrdersCount / (totalOrdersCount || 1)) * 100);
 
@@ -213,9 +249,10 @@ export const OrdersDashboard: React.FC<OrdersDashboardProps> = ({
   };
 
   const getNextStatus = (currentStatus: OrderStatus): OrderStatus => {
-    if (currentStatus === 'Pending' || currentStatus === 'בסידור עבודה') return 'In Progress';
-    if (currentStatus === 'In Progress' || currentStatus === 'בדרך לאתר' || currentStatus === 'הועמס במחסן') return 'Delivered';
-    return 'Pending';
+    if (currentStatus === 'Pending' || currentStatus === 'בסידור עבודה') return 'הועמס במחסן';
+    if (currentStatus === 'הועמס במחסן') return 'בדרך לאתר';
+    if (currentStatus === 'In Progress' || currentStatus === 'בדרך לאתר') return 'סופק בהצלחה';
+    return 'בסידור עבודה';
   };
 
   const kanbanColumns: Array<{
@@ -567,10 +604,38 @@ export const OrdersDashboard: React.FC<OrdersDashboardProps> = ({
             >
               <option value="all" className={isLight ? 'bg-white text-slate-900' : 'bg-slate-900 text-white'}>כל הסטטוסים</option>
               <option value="Pending" className={isLight ? 'bg-white text-slate-900' : 'bg-slate-900 text-white'}>בסידור עבודה (Pending)</option>
+              <option value="הועמס במחסן" className={isLight ? 'bg-white text-slate-900' : 'bg-slate-900 text-white'}>הועמס במחסן</option>
               <option value="In Progress" className={isLight ? 'bg-white text-slate-900' : 'bg-slate-900 text-white'}>בדרך לאתר (In Progress)</option>
               <option value="Delivered" className={isLight ? 'bg-white text-slate-900' : 'bg-slate-900 text-white'}>סופק בהצלחה (Delivered)</option>
             </select>
           </div>
+
+          {/* Toggle: Hide/Show Delivered Orders */}
+          <button
+            onClick={() => setHideDelivered(!hideDelivered)}
+            className={`px-3 py-1.5 rounded-2xl text-xs font-black transition flex items-center gap-1.5 border shadow-sm ${
+              hideDelivered
+                ? isLight 
+                  ? 'bg-emerald-600 text-white border-emerald-700 shadow-emerald-600/20' 
+                  : 'bg-emerald-500 text-slate-950 font-black border-emerald-400 shadow-emerald-500/20'
+                : isLight 
+                  ? 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200' 
+                  : 'bg-slate-950 hover:bg-slate-900 text-slate-300 border-slate-800'
+            }`}
+            title="הסתר או הצג כרטיסי הזמנות בסטטוס סופק בהצלחה כדי לשמור על דשבורד ממוקד ונקי"
+          >
+            {hideDelivered ? (
+              <>
+                <EyeOff className="w-3.5 h-3.5" />
+                <span>מוסתר סופקו ({deliveredOrdersCount})</span>
+              </>
+            ) : (
+              <>
+                <Eye className="w-3.5 h-3.5 text-emerald-500" />
+                <span>הסתר סופקו ({deliveredOrdersCount})</span>
+              </>
+            )}
+          </button>
 
           {/* View Mode Toggle: Cards vs Kanban vs Grid */}
           <div className={`flex items-center gap-1 p-1 rounded-2xl border ${
@@ -618,70 +683,372 @@ export const OrdersDashboard: React.FC<OrdersDashboardProps> = ({
 
       {/* VIEW MODE 1: LIVE INTERACTIVE ORDER CARDS (Featured View) */}
       {viewMode === 'cards' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-5">
-          {filteredOrders.map((order, index) => {
-            const step = getOrderProgressStep(order.status);
-            const orderIdStr = order.orderId || order.orderNumber || `ORD-${index}`;
-            const isCopied = copiedId === orderIdStr;
-            const isHikmat = (order.assignedDriver || order.driver || '').includes('חכמת');
-            const driverPhone = isHikmat ? '0508861080' : '0527714490';
-            const uniqueCardKey = `card-${orderIdStr}-${index}`;
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-5">
+            {filteredOrders.map((order, index) => {
+              const step = getOrderProgressStep(order.status);
+              const orderIdStr = order.orderId || order.orderNumber || `ORD-${index}`;
+              const isCopied = copiedId === orderIdStr;
+              const isHikmat = (order.assignedDriver || order.driver || '').includes('חכמת');
+              const driverPhone = isHikmat ? '0508861080' : '0527714490';
+              const uniqueCardKey = `card-${orderIdStr}-${index}`;
+              const isDelivered = isDeliveredStatus(order.status);
+              const isAnimating = animatingDeliveredId === orderIdStr;
 
-            return (
-              <div
-                key={uniqueCardKey}
-                onClick={() => setSelectedOrder(order)}
-                className={`group relative rounded-3xl p-5 shadow-lg hover:shadow-2xl transition-all duration-200 cursor-pointer flex flex-col justify-between overflow-hidden border ${
-                  isLight
-                    ? 'bg-white hover:bg-sky-50/30 border-sky-100 hover:border-sky-300 shadow-sky-100/70'
-                    : 'bg-slate-900/90 hover:bg-slate-900 border-slate-800 hover:border-cyan-500/50 shadow-slate-950/60'
-                }`}
-              >
-                {/* Accent Top Border Glowing Line */}
-                <div className={`absolute top-0 left-0 right-0 h-1.5 ${
-                  order.status === 'Delivered' || order.status === 'סופק בהצלחה'
-                    ? 'bg-gradient-to-r from-emerald-500 to-teal-400'
-                    : order.status === 'In Progress' || order.status === 'בדרך לאתר'
-                    ? 'bg-gradient-to-r from-amber-500 to-orange-400'
-                    : isLight 
-                    ? 'bg-gradient-to-r from-sky-500 to-blue-600'
-                    : 'bg-gradient-to-r from-cyan-500 to-blue-500'
-                }`} />
+              return (
+                <div
+                  key={uniqueCardKey}
+                  onClick={() => setSelectedOrder(order)}
+                  className={`group relative rounded-3xl p-5 shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer flex flex-col justify-between overflow-hidden border ${
+                    isAnimating
+                      ? 'ring-4 ring-emerald-500 bg-emerald-50/40 border-emerald-500 scale-[1.02] shadow-emerald-500/30'
+                      : isDelivered
+                      ? isLight
+                        ? 'bg-emerald-50/30 hover:bg-emerald-50/60 border-emerald-200 hover:border-emerald-400 shadow-emerald-100/50'
+                        : 'bg-emerald-950/20 hover:bg-emerald-950/30 border-emerald-900/50 hover:border-emerald-600 shadow-emerald-950/50'
+                      : isLight
+                      ? 'bg-white hover:bg-sky-50/30 border-sky-100 hover:border-sky-300 shadow-sky-100/70'
+                      : 'bg-slate-900/90 hover:bg-slate-900 border-slate-800 hover:border-cyan-500/50 shadow-slate-950/60'
+                  }`}
+                >
+                  {/* Accent Top Border Glowing Line */}
+                  <div className={`absolute top-0 left-0 right-0 h-1.5 ${
+                    isDelivered
+                      ? 'bg-gradient-to-r from-emerald-500 to-teal-400 animate-pulse'
+                      : order.status === 'In Progress' || order.status === 'בדרך לאתר'
+                      ? 'bg-gradient-to-r from-amber-500 to-orange-400'
+                      : order.status === 'הועמס במחסן'
+                      ? 'bg-gradient-to-r from-blue-500 to-sky-400'
+                      : isLight 
+                      ? 'bg-gradient-to-r from-sky-500 to-blue-600'
+                      : 'bg-gradient-to-r from-cyan-500 to-blue-500'
+                  }`} />
 
-                <div className="space-y-4">
-                  {/* Top Bar: Order ID, Copy, Warehouse, Status */}
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-1.5">
-                      <span className={`font-mono text-sm font-black px-3 py-1 rounded-2xl border flex items-center gap-1 transition ${
-                        isLight 
-                          ? 'bg-sky-50 text-sky-900 border-sky-200 group-hover:bg-sky-100' 
-                          : 'bg-slate-950 text-white border-slate-800 group-hover:text-cyan-300'
-                      }`}>
-                        <span>#{orderIdStr}</span>
-                      </span>
-                      <button
-                        onClick={(e) => handleCopyId(orderIdStr, e)}
-                        className={`p-1.5 rounded-xl border transition ${
+                  <div className="space-y-4">
+                    {/* Top Bar: Order ID, Copy, Warehouse, Status Badge & Sheets Sync Indicator */}
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-1.5">
+                        <span className={`font-mono text-sm font-black px-3 py-1 rounded-2xl border flex items-center gap-1 transition ${
                           isLight 
-                            ? 'bg-slate-50 hover:bg-sky-100 text-slate-500 hover:text-sky-700 border-slate-200' 
-                            : 'bg-slate-950 hover:bg-slate-800 text-slate-400 hover:text-cyan-300 border-slate-800'
-                        }`}
-                        title="העתק מספר הזמנה"
-                      >
-                        {isCopied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
-                      </button>
+                            ? 'bg-sky-50 text-sky-900 border-sky-200 group-hover:bg-sky-100' 
+                            : 'bg-slate-950 text-white border-slate-800 group-hover:text-cyan-300'
+                        }`}>
+                          <span>#{orderIdStr}</span>
+                        </span>
+                        <button
+                          onClick={(e) => handleCopyId(orderIdStr, e)}
+                          className={`p-1.5 rounded-xl border transition ${
+                            isLight 
+                              ? 'bg-slate-50 hover:bg-sky-100 text-slate-500 hover:text-sky-700 border-slate-200' 
+                              : 'bg-slate-950 hover:bg-slate-800 text-slate-400 hover:text-cyan-300 border-slate-800'
+                          }`}
+                          title="העתק מספר הזמנה"
+                        >
+                          {isCopied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                        </button>
 
-                      {/* EYE BUTTON IN CARD TOP BAR - GOOGLE DRIVE API LOOKUP */}
+                        {/* EYE BUTTON IN CARD TOP BAR - GOOGLE DRIVE API LOOKUP */}
+                        <button
+                          onClick={(e) => handleFetchDriveFile(order, e)}
+                          disabled={loadingDriveOrder === orderIdStr}
+                          id={`view-doc-top-${orderIdStr}`}
+                          className={`p-1.5 rounded-xl border transition flex items-center gap-1 shadow-sm active:scale-95 ${
+                            loadingDriveOrder === orderIdStr
+                              ? 'bg-amber-500 text-white border-amber-600 animate-pulse cursor-wait'
+                              : isLight 
+                              ? 'bg-sky-50 hover:bg-sky-100 text-sky-700 border-sky-300 hover:border-sky-500' 
+                              : 'bg-cyan-950/70 hover:bg-cyan-900 text-cyan-300 border-cyan-800 hover:border-cyan-500'
+                          }`}
+                          title="👁️ שליפת קישור ישיר לקובץ הזמנה מ-Google Drive לפי מזהה לקוח"
+                        >
+                          {loadingDriveOrder === orderIdStr ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin text-white" />
+                          ) : (
+                            <Eye className="w-3.5 h-3.5" />
+                          )}
+                        </button>
+                      </div>
+
+                      <div className="flex items-center gap-1.5">
+                        {order.warehouse === '4_HARASH' ? (
+                          <span className={`px-2.5 py-1 rounded-xl text-[11px] font-black flex items-center gap-1 border ${
+                            isLight
+                              ? 'bg-amber-50 text-amber-900 border-amber-200'
+                              : 'bg-amber-950/40 text-amber-300 border-amber-800/40'
+                          }`}>
+                            🏭 4 החרש
+                          </span>
+                        ) : (
+                          <span className={`px-2.5 py-1 rounded-xl text-[11px] font-black flex items-center gap-1 border ${
+                            isLight
+                              ? 'bg-blue-50 text-blue-900 border-blue-200'
+                              : 'bg-blue-950/40 text-blue-300 border-blue-800/40'
+                          }`}>
+                            🏟️ 1 התלמיד
+                          </span>
+                        )}
+
+                        <span className={`px-3 py-1 rounded-full text-xs font-black border transition-all ${getStatusBadgeStyle(order.status)}`}>
+                          {order.status}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Customer & Destination */}
+                    <div>
+                      <div className="flex items-start justify-between gap-2">
+                        <h3 className={`text-lg font-black transition leading-snug font-hebrew-heavy ${
+                          isLight 
+                            ? 'text-slate-950 group-hover:text-sky-700' 
+                            : 'text-white group-hover:text-cyan-300'
+                        }`}>
+                          {order.customerName}
+                        </h3>
+                        {order.deliveredAt && (
+                          <span className={`px-2 py-0.5 rounded-lg text-[10px] font-mono font-bold shrink-0 border ${
+                            isLight ? 'bg-emerald-100 text-emerald-800 border-emerald-300' : 'bg-emerald-950 text-emerald-300 border-emerald-800'
+                          }`}>
+                            🕒 נמסר {order.deliveredAt}
+                          </span>
+                        )}
+                      </div>
+                      <div className={`flex items-center justify-between text-xs mt-1.5 font-bold ${
+                        isLight ? 'text-slate-600' : 'text-slate-300'
+                      }`}>
+                        <div className="flex items-center gap-1.5 truncate max-w-[210px]">
+                          <MapPin className={`w-3.5 h-3.5 shrink-0 ${isLight ? 'text-sky-600' : 'text-cyan-400'}`} />
+                          <span className="truncate">{order.siteAddress || order.destination || order.city}</span>
+                        </div>
+                        <a
+                          href={order.wazeUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className={`px-3 py-1 rounded-xl border text-[11px] font-black flex items-center gap-1 transition shadow-sm ${
+                            isLight
+                              ? 'bg-sky-100 hover:bg-sky-200 text-sky-900 border-sky-300'
+                              : 'bg-cyan-950/60 hover:bg-cyan-900 text-cyan-300 border-cyan-800/60'
+                          }`}
+                          title="נווט עם Waze לאתר"
+                        >
+                          <Navigation className={`w-3.5 h-3.5 ${isLight ? 'text-sky-700' : 'text-cyan-400'}`} />
+                          <span>Waze</span>
+                        </a>
+                      </div>
+                    </div>
+
+                    {/* INTERACTIVE 4-STEP DELIVERY PROGRESS PIPELINE (לחץ לשינוי שלב ישיר וסנכרון מיידי) */}
+                    <div 
+                      className={`p-3.5 rounded-2xl border space-y-2.5 transition-all ${
+                        isLight ? 'bg-sky-50/60 border-sky-200' : 'bg-slate-950/80 border-slate-800/80'
+                      }`}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div className="flex items-center justify-between text-[11px] font-black">
+                        <span className="flex items-center gap-1 text-slate-500">
+                          <Activity className="w-3 h-3 text-sky-500 animate-pulse" />
+                          <span>שלב ביצוע אספקה (לחץ לקידום):</span>
+                        </span>
+                        <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-0.5">
+                          <CheckCheck className="w-3 h-3" />
+                          <span>סנכרון Live לגיליון</span>
+                        </span>
+                      </div>
+
+                      {/* Interactive Step Buttons Grid */}
+                      <div className="grid grid-cols-4 gap-1.5">
+                        <button
+                          onClick={(e) => handleQuickStatusChange(order, 'בסידור עבודה', e)}
+                          className={`py-1.5 px-1 rounded-xl text-[10px] font-black transition-all text-center border active:scale-95 ${
+                            step === 0
+                              ? isLight ? 'bg-sky-600 text-white border-sky-700 shadow-sm' : 'bg-cyan-500 text-slate-950 border-cyan-400 font-black'
+                              : isLight ? 'bg-white hover:bg-sky-100 text-slate-600 border-slate-200' : 'bg-slate-900 hover:bg-slate-800 text-slate-400 border-slate-800'
+                          }`}
+                          title="העבר לסטטוס בסידור עבודה"
+                        >
+                          1. נקלט
+                        </button>
+                        <button
+                          onClick={(e) => handleQuickStatusChange(order, 'הועמס במחסן', e)}
+                          className={`py-1.5 px-1 rounded-xl text-[10px] font-black transition-all text-center border active:scale-95 ${
+                            step === 1
+                              ? isLight ? 'bg-blue-600 text-white border-blue-700 shadow-sm' : 'bg-blue-500 text-white border-blue-400'
+                              : isLight ? 'bg-white hover:bg-sky-100 text-slate-600 border-slate-200' : 'bg-slate-900 hover:bg-slate-800 text-slate-400 border-slate-800'
+                          }`}
+                          title="סמן כהועמס במחסן"
+                        >
+                          2. הועמס
+                        </button>
+                        <button
+                          onClick={(e) => handleQuickStatusChange(order, 'בדרך לאתר', e)}
+                          className={`py-1.5 px-1 rounded-xl text-[10px] font-black transition-all text-center border active:scale-95 ${
+                            step === 2
+                              ? isLight ? 'bg-amber-500 text-white border-amber-600 shadow-sm' : 'bg-amber-500 text-slate-950 border-amber-400 font-black'
+                              : isLight ? 'bg-white hover:bg-amber-100 text-slate-600 border-slate-200' : 'bg-slate-900 hover:bg-slate-800 text-slate-400 border-slate-800'
+                          }`}
+                          title="סמן כבדרך לאתר"
+                        >
+                          3. בדרך
+                        </button>
+                        <button
+                          onClick={(e) => handleQuickStatusChange(order, 'סופק בהצלחה', e)}
+                          className={`py-1.5 px-1 rounded-xl text-[10px] font-black transition-all text-center border active:scale-95 ${
+                            step === 3
+                              ? isLight ? 'bg-emerald-600 text-white border-emerald-700 shadow-sm' : 'bg-emerald-500 text-slate-950 border-emerald-400 font-black'
+                              : isLight ? 'bg-white hover:bg-emerald-100 text-slate-600 border-slate-200' : 'bg-slate-900 hover:bg-slate-800 text-slate-400 border-slate-800'
+                          }`}
+                          title="סמן כסופק בהצלחה ועדכן גיליון בזמן אמת"
+                        >
+                          4. סופק ✓
+                        </button>
+                      </div>
+
+                      {/* Continuous Visual Track */}
+                      <div className="grid grid-cols-4 gap-1.5 pt-0.5">
+                        {[0, 1, 2, 3].map((sIndex) => (
+                          <div
+                            key={sIndex}
+                            className={`h-1.5 rounded-full transition-all duration-300 ${
+                              sIndex <= step
+                                ? step === 3
+                                  ? 'bg-emerald-500'
+                                  : step === 2
+                                  ? 'bg-amber-500'
+                                  : isLight ? 'bg-sky-500' : 'bg-cyan-400'
+                                : isLight ? 'bg-slate-200' : 'bg-slate-800'
+                            }`}
+                          />
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Driver & Schedule Row */}
+                    <div className={`flex items-center justify-between p-3 rounded-2xl border text-xs ${
+                      isLight 
+                        ? 'bg-white border-slate-200 shadow-sm' 
+                        : 'bg-slate-950/50 border-slate-800/50'
+                    }`}>
+                      <div className="flex items-center gap-2.5">
+                        <div className={`w-8 h-8 rounded-xl border flex items-center justify-center ${
+                          isLight ? 'bg-sky-50 border-sky-200 text-sky-700' : 'bg-slate-800 border-slate-700 text-slate-300'
+                        }`}>
+                          <Truck className={`w-4 h-4 ${isLight ? 'text-sky-600' : 'text-cyan-400'}`} />
+                        </div>
+                        <div>
+                          <span className={`font-black block leading-tight ${isLight ? 'text-slate-900' : 'text-white'}`}>
+                            {order.assignedDriver || order.driver}
+                          </span>
+                          <span className={`text-[11px] font-semibold ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                            {order.isCraneRequired ? 'משאית מנוף 🏗️' : 'משאית חלוקה 🚚'}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <a 
+                          href={`tel:${driverPhone}`}
+                          onClick={(e) => e.stopPropagation()}
+                          className={`p-1.5 rounded-xl border transition ${
+                            isLight 
+                              ? 'bg-slate-100 hover:bg-sky-100 text-slate-700 border-slate-200' 
+                              : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700'
+                          }`}
+                          title={`התקשר לנהג: ${driverPhone}`}
+                        >
+                          <Phone className="w-3.5 h-3.5" />
+                        </a>
+                        <div className={`flex items-center gap-1.5 font-mono text-xs font-bold ${
+                          isLight ? 'text-slate-700' : 'text-slate-300'
+                        }`}>
+                          <Clock className={`w-3.5 h-3.5 ${isLight ? 'text-sky-600' : 'text-cyan-400'}`} />
+                          <span>{order.scheduledTime || '08:30'}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* PRODUCTS TEXT BOX WITH DEDICATED STYLED BACKGROUND (הצג טקסט מוצרים עם רקע) */}
+                    <div className={`p-3.5 rounded-2xl border space-y-2 transition-all ${
+                      isLight 
+                        ? 'bg-sky-50/90 border-sky-200/90 shadow-inner' 
+                        : 'bg-slate-950 p-3 rounded-2xl border border-slate-800/90'
+                    }`}>
+                      <div className="flex items-center justify-between">
+                        <span className={`text-[11px] font-black flex items-center gap-1.5 ${
+                          isLight ? 'text-sky-950' : 'text-cyan-300'
+                        }`}>
+                          <Package className={`w-3.5 h-3.5 ${isLight ? 'text-sky-600' : 'text-cyan-400'}`} />
+                          <span>פירוט מוצרים ומק"טים (קומקס):</span>
+                        </span>
+                        <span className={`text-[10px] font-mono px-2 py-0.5 rounded-lg border font-bold ${
+                          isLight ? 'bg-white text-sky-800 border-sky-200' : 'bg-slate-900 text-slate-300 border-slate-800'
+                        }`}>
+                          מנורמל AI
+                        </span>
+                      </div>
+
+                      <div className={`p-2.5 rounded-xl border font-mono text-xs font-bold leading-relaxed whitespace-pre-line line-clamp-3 ${
+                        isLight 
+                          ? 'bg-white text-slate-900 border-sky-100 shadow-sm' 
+                          : 'bg-slate-900/90 text-cyan-200 border-slate-800'
+                      }`}>
+                        {order.itemsDetails || order.itemsFormatted}
+                      </div>
+
+                      {/* Deposit & Weights Summary row inside the products box */}
+                      <div className="flex flex-wrap items-center gap-1.5 pt-1 text-[11px]">
+                        {order.bigBagsDeposit > 0 && (
+                          <span className={`px-2.5 py-1 rounded-xl font-bold border flex items-center gap-1 shadow-sm ${
+                            isLight 
+                              ? 'bg-purple-100 text-purple-900 border-purple-300' 
+                              : 'bg-purple-950/60 text-purple-300 border-purple-800/40'
+                          }`}>
+                            <Boxes className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
+                            <span>בלות: {order.bigBagsDeposit}</span>
+                          </span>
+                        )}
+                        {order.palletsDeposit > 0 && (
+                          <span className={`px-2.5 py-1 rounded-xl font-bold border flex items-center gap-1 shadow-sm ${
+                            isLight 
+                              ? 'bg-indigo-100 text-indigo-900 border-indigo-300' 
+                              : 'bg-indigo-950/60 text-indigo-300 border-indigo-800/40'
+                          }`}>
+                            <PackageCheck className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+                            <span>משטחי סבן: {order.palletsDeposit}</span>
+                          </span>
+                        )}
+                        {order.totalWeightKg > 0 && (
+                          <span className={`px-2.5 py-1 rounded-xl font-mono font-bold border flex items-center gap-1 shadow-sm ${
+                            isLight 
+                              ? 'bg-slate-100 text-slate-800 border-slate-300' 
+                              : 'bg-slate-800 text-slate-200 border-slate-700'
+                          }`}>
+                            <Scale className="w-3.5 h-3.5 text-slate-500" />
+                            <span>{order.totalWeightKg.toLocaleString()} ק"ג</span>
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* BOTTOM DESIGNED ACTION BUTTONS ON ORDER CARD (כפתורי פעולה מעוצבים לכל כרטיס) */}
+                  <div 
+                    className={`mt-4 pt-3.5 border-t flex items-center justify-between gap-2 ${
+                      isLight ? 'border-slate-100' : 'border-slate-800'
+                    }`}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      {/* Action 1: Eye - Google Drive API direct link lookup & viewer */}
                       <button
                         onClick={(e) => handleFetchDriveFile(order, e)}
                         disabled={loadingDriveOrder === orderIdStr}
-                        id={`view-doc-top-${orderIdStr}`}
-                        className={`p-1.5 rounded-xl border transition flex items-center gap-1 shadow-sm active:scale-95 ${
+                        id={`view-doc-btn-${orderIdStr}`}
+                        className={`px-3 py-2 rounded-2xl text-xs font-black flex items-center gap-1.5 transition-all border shadow-sm active:scale-95 ${
                           loadingDriveOrder === orderIdStr
                             ? 'bg-amber-500 text-white border-amber-600 animate-pulse cursor-wait'
-                            : isLight 
-                            ? 'bg-sky-50 hover:bg-sky-100 text-sky-700 border-sky-300 hover:border-sky-500' 
-                            : 'bg-cyan-950/70 hover:bg-cyan-900 text-cyan-300 border-cyan-800 hover:border-cyan-500'
+                            : isLight
+                            ? 'bg-sky-600 hover:bg-sky-500 text-white border-sky-700 shadow-sky-600/20'
+                            : 'bg-cyan-600 hover:bg-cyan-500 text-white border-cyan-700 shadow-cyan-600/20'
                         }`}
                         title="👁️ שליפת קישור ישיר לקובץ הזמנה מ-Google Drive לפי מזהה לקוח"
                       >
@@ -690,294 +1057,180 @@ export const OrdersDashboard: React.FC<OrdersDashboardProps> = ({
                         ) : (
                           <Eye className="w-3.5 h-3.5" />
                         )}
+                        <span>{loadingDriveOrder === orderIdStr ? 'שולף...' : 'Drive 👁️'}</span>
+                      </button>
+
+                      {/* Action 2: Send WhatsApp to Driver */}
+                      <button
+                        onClick={() => onSendWhatsApp(order)}
+                        id={`whatsapp-order-${orderIdStr}`}
+                        className="px-3 py-2 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black flex items-center gap-1.5 transition-all shadow-md shadow-emerald-600/20 active:scale-95"
+                        title="שגר תדריך וואטסאפ לנהג"
+                      >
+                        <Send className="w-3.5 h-3.5" />
+                        <span>וואטסאפ</span>
+                      </button>
+
+                      {/* Action 3: Quick Advance Status Step */}
+                      <button
+                        onClick={(e) => handleQuickStatusChange(order, getNextStatus(order.status), e)}
+                        id={`advance-status-${orderIdStr}`}
+                        className={`px-3 py-2 rounded-2xl text-xs font-black transition-all border shadow-sm flex items-center gap-1.5 active:scale-95 ${
+                          order.status === 'Pending' || order.status === 'בסידור עבודה'
+                            ? isLight
+                              ? 'bg-blue-50 hover:bg-blue-100 text-blue-900 border-blue-300'
+                              : 'bg-blue-950/80 hover:bg-blue-900 text-blue-200 border-blue-700'
+                            : order.status === 'הועמס במחסן'
+                            ? isLight
+                              ? 'bg-amber-50 hover:bg-amber-100 text-amber-900 border-amber-300'
+                              : 'bg-amber-950/80 hover:bg-amber-900 text-amber-200 border-amber-700'
+                            : order.status === 'In Progress' || order.status === 'בדרך לאתר'
+                            ? isLight
+                              ? 'bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border-emerald-300'
+                              : 'bg-emerald-950/80 hover:bg-emerald-900 text-emerald-200 border-emerald-700'
+                            : isLight
+                            ? 'bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300'
+                            : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700'
+                        }`}
+                        title="קדם שלב באספקה"
+                      >
+                        <RotateCcw className={`w-3.5 h-3.5 ${isLight ? 'text-sky-700' : 'text-cyan-400'}`} />
+                        <span>
+                          {order.status === 'Pending' || order.status === 'בסידור עבודה'
+                            ? 'העבר להעמסה'
+                            : order.status === 'הועמס במחסן'
+                            ? 'יצא לדרך לאתר 🚚'
+                            : order.status === 'In Progress' || order.status === 'בדרך לאתר'
+                            ? 'סמן כסופק ✓'
+                            : 'החזר לסידור ↺'}
+                        </span>
                       </button>
                     </div>
 
-                    <div className="flex items-center gap-1.5">
-                      {order.warehouse === '4_HARASH' ? (
-                        <span className={`px-2.5 py-1 rounded-xl text-[11px] font-black flex items-center gap-1 border ${
-                          isLight
-                            ? 'bg-amber-50 text-amber-900 border-amber-200'
-                            : 'bg-amber-950/40 text-amber-300 border-amber-800/40'
-                        }`}>
-                          🏭 4 החרש
-                        </span>
-                      ) : (
-                        <span className={`px-2.5 py-1 rounded-xl text-[11px] font-black flex items-center gap-1 border ${
-                          isLight
-                            ? 'bg-blue-50 text-blue-900 border-blue-200'
-                            : 'bg-blue-950/40 text-blue-300 border-blue-800/40'
-                        }`}>
-                          🏟️ 1 התלמיד
-                        </span>
-                      )}
-
-                      <span className={`px-3 py-1 rounded-full text-xs font-black border ${getStatusBadgeStyle(order.status)}`}>
-                        {order.status}
-                      </span>
-                    </div>
+                    {/* Action 4: Open Details Modal */}
+                    <button
+                      onClick={() => setSelectedOrder(order)}
+                      id={`details-order-${orderIdStr}`}
+                      className={`px-3 py-2 rounded-2xl text-xs font-black transition-all border shadow-sm flex items-center gap-1 active:scale-95 ${
+                        isLight
+                          ? 'bg-white hover:bg-slate-50 text-slate-900 border-slate-300'
+                          : 'bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 border-cyan-500/30'
+                      }`}
+                    >
+                      <span>כרטיס</span>
+                      <ChevronRight className="w-3.5 h-3.5 rotate-180" />
+                    </button>
                   </div>
+                </div>
+              );
+            })}
+          </div>
 
-                  {/* Customer & Destination */}
-                  <div>
-                    <h3 className={`text-lg font-black transition leading-snug font-hebrew-heavy ${
-                      isLight 
-                        ? 'text-slate-950 group-hover:text-sky-700' 
-                        : 'text-white group-hover:text-cyan-300'
-                    }`}>
-                      {order.customerName}
-                    </h3>
-                    <div className={`flex items-center justify-between text-xs mt-1.5 font-bold ${
-                      isLight ? 'text-slate-600' : 'text-slate-300'
-                    }`}>
-                      <div className="flex items-center gap-1.5 truncate max-w-[210px]">
-                        <MapPin className={`w-3.5 h-3.5 shrink-0 ${isLight ? 'text-sky-600' : 'text-cyan-400'}`} />
-                        <span className="truncate">{order.siteAddress || order.destination || order.city}</span>
-                      </div>
-                      <a
-                        href={order.wazeUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={(e) => e.stopPropagation()}
-                        className={`px-3 py-1 rounded-xl border text-[11px] font-black flex items-center gap-1 transition shadow-sm ${
-                          isLight
-                            ? 'bg-sky-100 hover:bg-sky-200 text-sky-900 border-sky-300'
-                            : 'bg-cyan-950/60 hover:bg-cyan-900 text-cyan-300 border-cyan-800/60'
-                        }`}
-                        title="נווט עם Waze לאתר"
-                      >
-                        <Navigation className={`w-3.5 h-3.5 ${isLight ? 'text-sky-700' : 'text-cyan-400'}`} />
-                        <span>Waze</span>
-                      </a>
-                    </div>
+          {/* DEDICATED COMPLETED & DELIVERED ORDERS ARCHIVE (ארכיון אספקות שהושלמו היום) */}
+          {completedDeliveredOrders.length > 0 && (
+            <div className={`mt-8 rounded-3xl border transition-all overflow-hidden ${
+              isLight ? 'bg-white border-emerald-200 shadow-lg shadow-emerald-100/60' : 'bg-slate-900/90 border-emerald-900/50 shadow-2xl'
+            }`}>
+              {/* Collapsible Header */}
+              <button
+                onClick={() => setIsCompletedSectionOpen(!isCompletedSectionOpen)}
+                className={`w-full p-4 sm:p-5 flex items-center justify-between transition-colors ${
+                  isLight ? 'hover:bg-emerald-50/40 bg-emerald-50/20' : 'hover:bg-emerald-950/30 bg-emerald-950/20'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shadow-md shadow-emerald-600/30">
+                    <CheckCircle2 className="w-5 h-5" />
                   </div>
-
-                  {/* Visual Step-by-Step Delivery Progress Bar */}
-                  <div className={`p-3.5 rounded-2xl border space-y-2 ${
-                    isLight ? 'bg-sky-50/50 border-sky-100' : 'bg-slate-950/80 border-slate-800/80'
-                  }`}>
-                    <div className={`flex items-center justify-between text-[11px] font-black ${
-                      isLight ? 'text-slate-500' : 'text-slate-400'
-                    }`}>
-                      <span className={step >= 0 ? isLight ? 'text-sky-700' : 'text-cyan-400' : ''}>1. נקלט</span>
-                      <span className={step >= 1 ? isLight ? 'text-sky-700' : 'text-cyan-400' : ''}>2. הועמס</span>
-                      <span className={step >= 2 ? isLight ? 'text-amber-700' : 'text-amber-400' : ''}>3. בדרך</span>
-                      <span className={step >= 3 ? isLight ? 'text-emerald-700' : 'text-emerald-400' : ''}>4. סופק ✓</span>
-                    </div>
-                    <div className="grid grid-cols-4 gap-1.5">
-                      {[0, 1, 2, 3].map((sIndex) => (
-                        <div
-                          key={sIndex}
-                          className={`h-2 rounded-full transition-all duration-300 ${
-                            sIndex <= step
-                              ? step === 3
-                                ? 'bg-emerald-500'
-                                : step === 2
-                                ? 'bg-amber-500'
-                                : isLight ? 'bg-sky-500' : 'bg-cyan-400'
-                              : isLight ? 'bg-slate-200' : 'bg-slate-800'
-                          }`}
-                        />
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Driver & Schedule Row */}
-                  <div className={`flex items-center justify-between p-3 rounded-2xl border text-xs ${
-                    isLight 
-                      ? 'bg-white border-slate-200 shadow-sm' 
-                      : 'bg-slate-950/50 border-slate-800/50'
-                  }`}>
-                    <div className="flex items-center gap-2.5">
-                      <div className={`w-8 h-8 rounded-xl border flex items-center justify-center ${
-                        isLight ? 'bg-sky-50 border-sky-200 text-sky-700' : 'bg-slate-800 border-slate-700 text-slate-300'
-                      }`}>
-                        <Truck className={`w-4 h-4 ${isLight ? 'text-sky-600' : 'text-cyan-400'}`} />
-                      </div>
-                      <div>
-                        <span className={`font-black block leading-tight ${isLight ? 'text-slate-900' : 'text-white'}`}>
-                          {order.assignedDriver || order.driver}
-                        </span>
-                        <span className={`text-[11px] font-semibold ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
-                          {order.isCraneRequired ? 'משאית מנוף 🏗️' : 'משאית חלוקה 🚚'}
-                        </span>
-                      </div>
-                    </div>
-
+                  <div className="text-right">
                     <div className="flex items-center gap-2">
-                      <a 
-                        href={`tel:${driverPhone}`}
-                        onClick={(e) => e.stopPropagation()}
-                        className={`p-1.5 rounded-xl border transition ${
-                          isLight 
-                            ? 'bg-slate-100 hover:bg-sky-100 text-slate-700 border-slate-200' 
-                            : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700'
-                        }`}
-                        title={`התקשר לנהג: ${driverPhone}`}
-                      >
-                        <Phone className="w-3.5 h-3.5" />
-                      </a>
-                      <div className={`flex items-center gap-1.5 font-mono text-xs font-bold ${
-                        isLight ? 'text-slate-700' : 'text-slate-300'
-                      }`}>
-                        <Clock className={`w-3.5 h-3.5 ${isLight ? 'text-sky-600' : 'text-cyan-400'}`} />
-                        <span>{order.scheduledTime || '08:30'}</span>
-                      </div>
+                      <h3 className={`text-base font-black font-hebrew-heavy ${isLight ? 'text-slate-900' : 'text-white'}`}>
+                        ארכיון אספקות שהושלמו היום
+                      </h3>
+                      <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-black bg-emerald-500 text-slate-950">
+                        {completedDeliveredOrders.length} סופקו
+                      </span>
                     </div>
+                    <p className={`text-xs ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                      כל ההזמנות שסופקו בהצלחה, נחתמו וסונכרנו בזמן אמת לגוגל שיטס
+                    </p>
                   </div>
+                </div>
 
-                  {/* PRODUCTS TEXT BOX WITH DEDICATED STYLED BACKGROUND (הצג טקסט מוצרים עם רקע) */}
-                  <div className={`p-3.5 rounded-2xl border space-y-2 transition-all ${
-                    isLight 
-                      ? 'bg-sky-50/90 border-sky-200/90 shadow-inner' 
-                      : 'bg-slate-950 p-3 rounded-2xl border border-slate-800/90'
+                <div className="flex items-center gap-2">
+                  <span className={`text-xs font-bold hidden sm:inline ${isLight ? 'text-slate-600' : 'text-slate-300'}`}>
+                    {isCompletedSectionOpen ? 'צמצם תצוגה' : 'פתח לצפייה בכל האספקות'}
+                  </span>
+                  <div className={`p-1.5 rounded-xl border transition-transform duration-200 ${isCompletedSectionOpen ? 'rotate-180' : ''} ${
+                    isLight ? 'bg-white border-slate-200' : 'bg-slate-800 border-slate-700'
                   }`}>
-                    <div className="flex items-center justify-between">
-                      <span className={`text-[11px] font-black flex items-center gap-1.5 ${
-                        isLight ? 'text-sky-950' : 'text-cyan-300'
-                      }`}>
-                        <Package className={`w-3.5 h-3.5 ${isLight ? 'text-sky-600' : 'text-cyan-400'}`} />
-                        <span>פירוט מוצרים ומק"טים (קומקס):</span>
-                      </span>
-                      <span className={`text-[10px] font-mono px-2 py-0.5 rounded-lg border font-bold ${
-                        isLight ? 'bg-white text-sky-800 border-sky-200' : 'bg-slate-900 text-slate-300 border-slate-800'
-                      }`}>
-                        מנורמל AI
-                      </span>
-                    </div>
-
-                    <div className={`p-2.5 rounded-xl border font-mono text-xs font-bold leading-relaxed whitespace-pre-line line-clamp-3 ${
-                      isLight 
-                        ? 'bg-white text-slate-900 border-sky-100 shadow-sm' 
-                        : 'bg-slate-900/90 text-cyan-200 border-slate-800'
-                    }`}>
-                      {order.itemsDetails || order.itemsFormatted}
-                    </div>
-
-                    {/* Deposit & Weights Summary row inside the products box */}
-                    <div className="flex flex-wrap items-center gap-1.5 pt-1 text-[11px]">
-                      {order.bigBagsDeposit > 0 && (
-                        <span className={`px-2.5 py-1 rounded-xl font-bold border flex items-center gap-1 shadow-sm ${
-                          isLight 
-                            ? 'bg-purple-100 text-purple-900 border-purple-300' 
-                            : 'bg-purple-950/60 text-purple-300 border-purple-800/40'
-                        }`}>
-                          <Boxes className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
-                          <span>בלות: {order.bigBagsDeposit}</span>
-                        </span>
-                      )}
-                      {order.palletsDeposit > 0 && (
-                        <span className={`px-2.5 py-1 rounded-xl font-bold border flex items-center gap-1 shadow-sm ${
-                          isLight 
-                            ? 'bg-indigo-100 text-indigo-900 border-indigo-300' 
-                            : 'bg-indigo-950/60 text-indigo-300 border-indigo-800/40'
-                        }`}>
-                          <PackageCheck className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
-                          <span>משטחי סבן: {order.palletsDeposit}</span>
-                        </span>
-                      )}
-                      {order.totalWeightKg > 0 && (
-                        <span className={`px-2.5 py-1 rounded-xl font-mono font-bold border flex items-center gap-1 shadow-sm ${
-                          isLight 
-                            ? 'bg-slate-100 text-slate-800 border-slate-300' 
-                            : 'bg-slate-800 text-slate-200 border-slate-700'
-                        }`}>
-                          <Scale className="w-3.5 h-3.5 text-slate-500" />
-                          <span>{order.totalWeightKg.toLocaleString()} ק"ג</span>
-                        </span>
-                      )}
-                    </div>
+                    <ChevronDown className="w-4 h-4" />
                   </div>
                 </div>
+              </button>
 
-                {/* BOTTOM DESIGNED ACTION BUTTONS ON ORDER CARD (כפתורי פעולה מעוצבים לכל כרטיס) */}
-                <div 
-                  className={`mt-4 pt-3.5 border-t flex items-center justify-between gap-2 ${
-                    isLight ? 'border-slate-100' : 'border-slate-800'
-                  }`}
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    {/* Action 1: Eye - Google Drive API direct link lookup & viewer */}
-                    <button
-                      onClick={(e) => handleFetchDriveFile(order, e)}
-                      disabled={loadingDriveOrder === orderIdStr}
-                      id={`view-doc-btn-${orderIdStr}`}
-                      className={`px-3 py-2 rounded-2xl text-xs font-black flex items-center gap-1.5 transition-all border shadow-sm active:scale-95 ${
-                        loadingDriveOrder === orderIdStr
-                          ? 'bg-amber-500 text-white border-amber-600 animate-pulse cursor-wait'
-                          : isLight
-                          ? 'bg-sky-600 hover:bg-sky-500 text-white border-sky-700 shadow-sky-600/20'
-                          : 'bg-cyan-600 hover:bg-cyan-500 text-white border-cyan-700 shadow-cyan-600/20'
-                      }`}
-                      title="👁️ שליפת קישור ישיר לקובץ הזמנה מ-Google Drive לפי מזהה לקוח"
-                    >
-                      {loadingDriveOrder === orderIdStr ? (
-                        <Loader2 className="w-3.5 h-3.5 animate-spin text-white" />
-                      ) : (
-                        <Eye className="w-3.5 h-3.5" />
-                      )}
-                      <span>{loadingDriveOrder === orderIdStr ? 'שולף מ-Drive...' : 'קובץ Drive 👁️'}</span>
-                    </button>
+              {/* Expanded List */}
+              {isCompletedSectionOpen && (
+                <div className={`p-4 sm:p-5 border-t space-y-3 ${isLight ? 'border-emerald-100 bg-white' : 'border-slate-800 bg-slate-950/60'}`}>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {completedDeliveredOrders.map((order, cIdx) => {
+                      const cIdStr = order.orderId || order.orderNumber || `COMP-${cIdx}`;
+                      return (
+                        <div
+                          key={`comp-card-${cIdStr}`}
+                          className={`p-4 rounded-2xl border flex flex-col justify-between gap-3 transition-all ${
+                            isLight ? 'bg-slate-50 hover:bg-emerald-50/50 border-slate-200' : 'bg-slate-900 hover:bg-slate-850 border-slate-800'
+                          }`}
+                        >
+                          <div className="space-y-1.5">
+                            <div className="flex items-center justify-between">
+                              <span className="font-mono text-xs font-black text-emerald-700 dark:text-emerald-400">
+                                #{cIdStr}
+                              </span>
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
+                                ✓ סופק ונחתם
+                              </span>
+                            </div>
+                            <h4 className={`text-sm font-black truncate ${isLight ? 'text-slate-900' : 'text-white'}`}>
+                              {order.customerName}
+                            </h4>
+                            <p className={`text-xs truncate flex items-center gap-1 ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
+                              <MapPin className="w-3 h-3 shrink-0 text-emerald-600" />
+                              <span>{order.siteAddress || order.destination}</span>
+                            </p>
+                            <div className={`flex items-center justify-between text-[11px] font-mono pt-1 ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                              <span>נהג: {order.assignedDriver || order.driver}</span>
+                              {order.deliveredAt && <span>שעת מסירה: {order.deliveredAt}</span>}
+                            </div>
+                          </div>
 
-                    {/* Action 2: Send WhatsApp to Driver */}
-                    <button
-                      onClick={() => onSendWhatsApp(order)}
-                      id={`whatsapp-order-${orderIdStr}`}
-                      className="px-3 py-2 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black flex items-center gap-1.5 transition-all shadow-md shadow-emerald-600/20 active:scale-95"
-                      title="שגר תדריך וואטסאפ לנהג"
-                    >
-                      <Send className="w-3.5 h-3.5" />
-                      <span>וואטסאפ</span>
-                    </button>
+                          <div className="flex items-center justify-between pt-2 border-t border-slate-200 dark:border-slate-800">
+                            <button
+                              onClick={() => handleQuickStatusChange(order, 'בדרך לאתר')}
+                              className={`px-2.5 py-1 rounded-xl text-[11px] font-bold border transition flex items-center gap-1 ${
+                                isLight ? 'bg-white text-slate-700 hover:bg-slate-100 border-slate-300' : 'bg-slate-800 text-slate-300 hover:bg-slate-700 border-slate-700'
+                              }`}
+                              title="החזר לסטטוס בדרך לאתר"
+                            >
+                              <RotateCcw className="w-3 h-3" />
+                              <span>החזר לפעיל</span>
+                            </button>
 
-                    {/* Action 3: Quick Status Advance Button */}
-                    <button
-                      onClick={() => onUpdateStatus(order.orderNumber, getNextStatus(order.status))}
-                      id={`advance-status-${orderIdStr}`}
-                      className={`px-3 py-2 rounded-2xl text-xs font-black transition-all border shadow-sm flex items-center gap-1.5 active:scale-95 ${
-                        order.status === 'Pending' || order.status === 'בסידור עבודה'
-                          ? isLight
-                            ? 'bg-sky-50 hover:bg-sky-100 text-sky-900 border-sky-300'
-                            : 'bg-sky-950/80 hover:bg-sky-900 text-sky-200 border-sky-700'
-                          : order.status === 'In Progress' || order.status === 'בדרך לאתר'
-                          ? isLight
-                            ? 'bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border-emerald-300'
-                            : 'bg-emerald-950/80 hover:bg-emerald-900 text-emerald-200 border-emerald-700'
-                          : isLight
-                          ? 'bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300'
-                          : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700'
-                      }`}
-                      title="קדם שלב בסידור אספקה"
-                    >
-                      <RotateCcw className={`w-3.5 h-3.5 ${isLight ? 'text-sky-700' : 'text-cyan-400'}`} />
-                      <span>
-                        {order.status === 'Pending' || order.status === 'בסידור עבודה'
-                          ? 'העבר להעמסה'
-                          : order.status === 'In Progress' || order.status === 'בדרך לאתר'
-                          ? 'סמן כסופק ✓'
-                          : 'אפס סטטוס'}
-                      </span>
-                    </button>
+                            <button
+                              onClick={() => setSelectedOrder(order)}
+                              className="px-3 py-1 rounded-xl bg-emerald-600 text-white text-[11px] font-bold hover:bg-emerald-500 transition shadow-sm"
+                            >
+                              פתח כרטיס
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
-
-                  {/* Action 4: Open Details Modal */}
-                  <button
-                    onClick={() => setSelectedOrder(order)}
-                    id={`details-order-${orderIdStr}`}
-                    className={`px-3 py-2 rounded-2xl text-xs font-black transition-all border shadow-sm flex items-center gap-1 active:scale-95 ${
-                      isLight
-                        ? 'bg-white hover:bg-slate-50 text-slate-900 border-slate-300'
-                        : 'bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 border-cyan-500/30'
-                    }`}
-                  >
-                    <span>כרטיס</span>
-                    <ChevronRight className="w-3.5 h-3.5 rotate-180" />
-                  </button>
                 </div>
-              </div>
-            );
-          })}
+              )}
+            </div>
+          )}
         </div>
       )}
 
@@ -1289,6 +1542,7 @@ export const OrdersDashboard: React.FC<OrdersDashboardProps> = ({
         onClose={() => setSelectedOrder(null)}
         onUpdateStatus={onUpdateStatus}
         onGenerateDeliveryNote={onGenerateDeliveryNote}
+        onOpenScanner={onOpenScanner}
       />
 
       {/* View E: Order Document Viewer & Customer Folder Modal (Eye Button) */}

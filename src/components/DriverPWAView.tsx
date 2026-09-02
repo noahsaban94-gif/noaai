@@ -15,7 +15,9 @@ import {
   Layers,
   Sparkles,
   Map as MapIcon,
-  ListFilter
+  ListFilter,
+  Camera,
+  PenTool
 } from 'lucide-react';
 import { SABAN_DRIVERS } from '../data/mockData';
 import { Order } from '../types';
@@ -25,12 +27,14 @@ interface DriverPWAViewProps {
   orders: Order[];
   onUpdateStatus: (orderNumber: string, status: Order['status']) => void;
   onSendWhatsApp: (order: Order) => void;
+  onOpenScanner?: (order: Order) => void;
 }
 
 export const DriverPWAView: React.FC<DriverPWAViewProps> = ({
   orders,
   onUpdateStatus,
-  onSendWhatsApp
+  onSendWhatsApp,
+  onOpenScanner
 }) => {
   const [selectedDriverId, setSelectedDriverId] = useState<string>('hikmat');
   const [driverViewMode, setDriverViewMode] = useState<'cards' | 'map' | 'split'>('cards');
@@ -314,17 +318,50 @@ export const DriverPWAView: React.FC<DriverPWAViewProps> = ({
                     </button>
                   </div>
 
-                  {/* Send Test Push Notification */}
-                  <button
-                    onClick={() => handleTriggerDriverPush(order)}
-                    disabled={isSendingPush}
-                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-blue-950/60 hover:bg-blue-900/60 text-blue-300 border border-blue-800 text-xs font-medium transition"
-                    title="שלח התראת דחיפה לטלפון הנהג"
-                  >
-                    <Bell className="w-3.5 h-3.5 text-blue-400" />
-                    <span>שלח Push לטלפון</span>
-                  </button>
+                  {/* Camera Scanner Button for Driver & Send Push */}
+                  <div className="flex items-center gap-2">
+                    {onOpenScanner && (
+                      <button
+                        onClick={() => onOpenScanner(order)}
+                        className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold border transition shadow-sm ${
+                          order.signatureReceived || order.signatureImage
+                            ? 'bg-emerald-950/70 hover:bg-emerald-900 text-emerald-300 border-emerald-800'
+                            : 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 text-white border-emerald-500 shadow-emerald-900/30 active:scale-95'
+                        }`}
+                        title="סרוק חתימת נייר פיזית באמצעות מצלמת הנייד"
+                      >
+                        <Camera className="w-3.5 h-3.5" />
+                        <span>{order.signatureReceived || order.signatureImage ? 'חתימה נסרקה ✓ (עדכן)' : '📸 סרוק חתימה במצלמה'}</span>
+                      </button>
+                    )}
+
+                    {/* Send Test Push Notification */}
+                    <button
+                      onClick={() => handleTriggerDriverPush(order)}
+                      disabled={isSendingPush}
+                      className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-blue-950/60 hover:bg-blue-900/60 text-blue-300 border border-blue-800 text-xs font-medium transition"
+                      title="שלח התראת דחיפה לטלפון הנהג"
+                    >
+                      <Bell className="w-3.5 h-3.5 text-blue-400" />
+                      <span>שלח Push לטלפון</span>
+                    </button>
+                  </div>
                 </div>
+
+                {/* Scanned Signature Preview if available */}
+                {(order.signatureImage || order.signatureReceived) && (
+                  <div className="p-3 rounded-2xl bg-emerald-950/30 border border-emerald-800/60 flex items-center justify-between gap-3 text-xs">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />
+                      <span className="text-emerald-300 font-bold">חתימת לקוח/אתר נסרקה ומאושרת בתעודת המשלוח</span>
+                    </div>
+                    {order.signatureImage && (
+                      <div className="bg-white rounded-lg px-2 py-0.5 border border-emerald-700 shrink-0">
+                        <img src={order.signatureImage} alt="חתימה נסרקת" className="h-5 max-w-[80px] object-contain" />
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* Delivery Confirmation Feedback */}
                 {activeSignOrder === order.orderNumber && (

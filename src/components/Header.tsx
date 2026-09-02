@@ -16,7 +16,8 @@ import {
   MapPin,
   BookOpen,
   Sun,
-  Moon
+  Moon,
+  Camera
 } from 'lucide-react';
 import { SABAN_DRIVERS, SABAN_WAREHOUSES } from '../data/mockData';
 import { useTheme } from '../context/ThemeContext';
@@ -27,6 +28,7 @@ interface HeaderProps {
   isSyncing: boolean;
   onManualSync: () => void;
   onOpenSyncModal: () => void;
+  onOpenScanner?: () => void;
   totalOrders: number;
   unreadEmailCount: number;
   deliveryNotesCount: number;
@@ -38,6 +40,7 @@ export const Header: React.FC<HeaderProps> = ({
   isSyncing,
   onManualSync,
   onOpenSyncModal,
+  onOpenScanner,
   totalOrders,
   unreadEmailCount,
   deliveryNotesCount
@@ -171,6 +174,23 @@ export const Header: React.FC<HeaderProps> = ({
             <ExternalLink className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">גיליון חי</span>
           </a>
+
+          {/* Camera Scanner Quick Trigger */}
+          {onOpenScanner && (
+            <button
+              onClick={onOpenScanner}
+              id="camera-scanner-quick-btn"
+              title="סורק מצלמה: סרוק חתימות נייר והצמד לתעודות משלוח"
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black border transition shadow-sm ${
+                isLight
+                  ? 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-emerald-300'
+                  : 'bg-emerald-950/70 hover:bg-emerald-900/70 text-emerald-300 border-emerald-800/80 shadow-emerald-950/50'
+              }`}
+            >
+              <Camera className="w-3.5 h-3.5 text-emerald-500 animate-pulse" />
+              <span className="hidden sm:inline">סורק מצלמה</span>
+            </button>
+          )}
 
           {/* System Diagnostics Modal Trigger */}
           <button
