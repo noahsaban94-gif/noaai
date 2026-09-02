@@ -46,8 +46,13 @@ function AppContent() {
   const fetchSystemInfo = async () => {
     try {
       const res = await fetch('/api/system-info');
-      const data = await res.json();
-      setSystemInfo(data);
+      if (res.ok) {
+        const text = await res.text();
+        if (text && !text.trim().startsWith('<')) {
+          const data = JSON.parse(text);
+          setSystemInfo(data);
+        }
+      }
     } catch (e) {
       console.warn('Could not fetch system info:', e);
     }
@@ -57,10 +62,15 @@ function AppContent() {
     try {
       setIsSyncing(true);
       const res = await fetch('/api/gas/orders');
-      const data = await res.json();
-      if (data.orders && Array.isArray(data.orders) && data.orders.length > 0) {
-        setOrders(data.orders);
-        showToast('✓ סנכרון חי מול גיליון 1VA9J6n... הושלם בהצלחה!', 'success');
+      if (res.ok) {
+        const text = await res.text();
+        if (text && !text.trim().startsWith('<')) {
+          const data = JSON.parse(text);
+          if (data && data.orders && Array.isArray(data.orders) && data.orders.length > 0) {
+            setOrders(data.orders);
+            showToast('✓ סנכרון חי מול גיליון 1VA9J6n... הושלם בהצלחה!', 'success');
+          }
+        }
       }
     } catch (e) {
       console.warn('GAS fetch fallback:', e);
@@ -103,6 +113,21 @@ function AppContent() {
       prev.map(o => (o.orderNumber === orderNumber || o.orderId === orderNumber ? { ...o, status: newStatus } : o))
     );
     showToast(`סטטוס הזמנה #${orderNumber} עודכן ל: "${newStatus}"`, 'info');
+  };
+
+  // Update order document URL and direct sheet link
+  const handleUpdateOrderDocument = (orderNumber: string, docUrl: string, docName: string, directSheetViewUrl?: string) => {
+    setOrders(prev => prev.map(o => {
+      if (o.orderNumber === orderNumber || o.orderId === orderNumber) {
+        return {
+          ...o,
+          orderDocumentUrl: docUrl,
+          orderDocumentName: docName,
+          directSheetViewUrl: directSheetViewUrl || o.directSheetViewUrl
+        };
+      }
+      return o;
+    }));
   };
 
   // Generate Delivery Note and append to Table 3
@@ -296,11 +321,18 @@ ${order.wazeUrl}
       />
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6">
-        {/* VIEW A: Noa AI Chat (WhatsApp Clone & Normalizer) */}
+      <main className={`flex-1 w-full mx-auto transition-all ${
+        activeTab === 'noa-chat'
+          ? 'max-w-[1700px] px-0 sm:px-3 py-0 sm:py-2'
+          : 'max-w-7xl px-4 sm:px-6 py-6'
+      }`}>
+        {/* VIEW A: Noa AI Chat (100% WhatsApp Experience & Normalizer) */}
         {activeTab === 'noa-chat' && (
           <NoaAIChat
             onAddOrderToSchedule={handleAddOrder}
+            onOpenOrderModal={(order) => {
+              setActiveTab('orders');
+            }}
           />
         )}
 
@@ -316,6 +348,8 @@ ${order.wazeUrl}
             onGenerateDeliveryNote={handleGenerateDeliveryNote}
             onNavigateToDensityMap={() => setActiveTab('route-density')}
             onNavigateToNoaChat={() => setActiveTab('noa-chat')}
+            onUpdateOrderDocument={handleUpdateOrderDocument}
+            showToast={showToast}
           />
         )}
 

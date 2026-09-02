@@ -40,6 +40,7 @@ import { Order, OrderStatus, WarehouseId } from '../types';
 import { SABAN_DRIVERS } from '../data/mockData';
 import { NewOrderModal } from './NewOrderModal';
 import { OrderCardModal } from './OrderCardModal';
+import { OrderDocumentViewerModal } from './OrderDocumentViewerModal';
 import { useTheme } from '../context/ThemeContext';
 
 interface OrdersDashboardProps {
@@ -52,6 +53,8 @@ interface OrdersDashboardProps {
   onGenerateDeliveryNote?: (order: Order, signatureDataUrl?: string) => void;
   onNavigateToDensityMap?: () => void;
   onNavigateToNoaChat?: () => void;
+  onUpdateOrderDocument?: (orderNumber: string, docUrl: string, docName: string, directSheetViewUrl?: string) => void;
+  showToast?: (msg: string, type?: 'success' | 'error' | 'info') => void;
 }
 
 export const OrdersDashboard: React.FC<OrdersDashboardProps> = ({
@@ -63,7 +66,9 @@ export const OrdersDashboard: React.FC<OrdersDashboardProps> = ({
   isInjecting,
   onGenerateDeliveryNote,
   onNavigateToDensityMap,
-  onNavigateToNoaChat
+  onNavigateToNoaChat,
+  onUpdateOrderDocument,
+  showToast = () => {}
 }) => {
   const { theme } = useTheme();
   const isLight = theme === 'light';
@@ -75,6 +80,8 @@ export const OrdersDashboard: React.FC<OrdersDashboardProps> = ({
   const [viewMode, setViewMode] = useState<'cards' | 'kanban' | 'grid'>('cards');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [viewerModalOrder, setViewerModalOrder] = useState<Order | null>(null);
+  const [isViewerModalOpen, setIsViewerModalOpen] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   // Copy Order ID helper
@@ -610,6 +617,24 @@ export const OrdersDashboard: React.FC<OrdersDashboardProps> = ({
                       >
                         {isCopied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
                       </button>
+
+                      {/* EYE BUTTON IN CARD TOP BAR */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setViewerModalOrder(order);
+                          setIsViewerModalOpen(true);
+                        }}
+                        id={`view-doc-top-${orderIdStr}`}
+                        className={`p-1.5 rounded-xl border transition flex items-center gap-1 shadow-sm ${
+                          isLight 
+                            ? 'bg-sky-50 hover:bg-sky-100 text-sky-700 border-sky-300 hover:border-sky-500' 
+                            : 'bg-cyan-950/70 hover:bg-cyan-900 text-cyan-300 border-cyan-800 hover:border-cyan-500'
+                        }`}
+                        title="👁️ צפייה והעלאת קובץ הזמנה לתיקיית לקוח"
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                      </button>
                     </div>
 
                     <div className="flex items-center gap-1.5">
@@ -817,7 +842,25 @@ export const OrdersDashboard: React.FC<OrdersDashboardProps> = ({
                   onClick={(e) => e.stopPropagation()}
                 >
                   <div className="flex items-center gap-1.5 flex-wrap">
-                    {/* Action 1: Send WhatsApp to Driver */}
+                    {/* Action 1: Eye - View & Upload Document to Customer Folder */}
+                    <button
+                      onClick={() => {
+                        setViewerModalOrder(order);
+                        setIsViewerModalOpen(true);
+                      }}
+                      id={`view-doc-btn-${orderIdStr}`}
+                      className={`px-3 py-2 rounded-2xl text-xs font-black flex items-center gap-1.5 transition-all border shadow-sm active:scale-95 ${
+                        isLight
+                          ? 'bg-sky-600 hover:bg-sky-500 text-white border-sky-700 shadow-sky-600/20'
+                          : 'bg-cyan-600 hover:bg-cyan-500 text-white border-cyan-700 shadow-cyan-600/20'
+                      }`}
+                      title="👁️ צפייה והעלאת קובץ הזמנה לתיקיית לקוח ועדכון בגיליון"
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                      <span>קובץ 👁️</span>
+                    </button>
+
+                    {/* Action 2: Send WhatsApp to Driver */}
                     <button
                       onClick={() => onSendWhatsApp(order)}
                       id={`whatsapp-order-${orderIdStr}`}
@@ -828,7 +871,7 @@ export const OrdersDashboard: React.FC<OrdersDashboardProps> = ({
                       <span>וואטסאפ</span>
                     </button>
 
-                    {/* Action 2: Quick Status Advance Button */}
+                    {/* Action 3: Quick Status Advance Button */}
                     <button
                       onClick={() => onUpdateStatus(order.orderNumber, getNextStatus(order.status))}
                       id={`advance-status-${orderIdStr}`}
@@ -858,7 +901,7 @@ export const OrdersDashboard: React.FC<OrdersDashboardProps> = ({
                     </button>
                   </div>
 
-                  {/* Action 3: Open Details Modal */}
+                  {/* Action 4: Open Details Modal */}
                   <button
                     onClick={() => setSelectedOrder(order)}
                     id={`details-order-${orderIdStr}`}
@@ -919,13 +962,28 @@ export const OrdersDashboard: React.FC<OrdersDashboardProps> = ({
                           : 'bg-slate-950/90 border-slate-800 hover:border-cyan-500/60'
                       }`}
                     >
-                      {/* Top Row: Order ID & Warehouse */}
+                      {/* Top Row: Order ID, Eye Document Button, Warehouse */}
                       <div className="flex items-center justify-between">
-                        <span className={`font-mono text-xs font-black ${
-                          isLight ? 'text-sky-700 group-hover:text-sky-900' : 'text-cyan-400 group-hover:text-cyan-300'
-                        }`}>
-                          #{order.orderId || order.orderNumber}
-                        </span>
+                        <div className="flex items-center gap-1.5">
+                          <span className={`font-mono text-xs font-black ${
+                            isLight ? 'text-sky-700 group-hover:text-sky-900' : 'text-cyan-400 group-hover:text-cyan-300'
+                          }`}>
+                            #{order.orderId || order.orderNumber}
+                          </span>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setViewerModalOrder(order);
+                              setIsViewerModalOpen(true);
+                            }}
+                            className={`p-1 rounded-lg border transition ${
+                              isLight ? 'bg-sky-50 text-sky-700 border-sky-200 hover:bg-sky-100' : 'bg-slate-900 text-cyan-300 border-slate-700 hover:bg-slate-800'
+                            }`}
+                            title="👁️ צפייה והעלאת קובץ הזמנה לתיקיית לקוח"
+                          >
+                            <Eye className="w-3 h-3" />
+                          </button>
+                        </div>
                         <span className={`text-[10px] font-bold px-2 py-0.5 rounded-lg border ${
                           isLight ? 'bg-slate-100 border-slate-200 text-slate-700' : 'bg-slate-900 border-slate-800 text-slate-300'
                         }`}>
@@ -1100,6 +1158,22 @@ export const OrdersDashboard: React.FC<OrdersDashboardProps> = ({
                     </td>
                     <td className="p-4 text-center" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center justify-center gap-1.5">
+                        {/* Eye Document Button */}
+                        <button
+                          onClick={() => {
+                            setViewerModalOrder(order);
+                            setIsViewerModalOpen(true);
+                          }}
+                          className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition flex items-center gap-1 ${
+                            isLight
+                              ? 'bg-sky-50 hover:bg-sky-100 text-sky-800 border-sky-300'
+                              : 'bg-cyan-950/70 hover:bg-cyan-900 text-cyan-300 border-cyan-800'
+                          }`}
+                          title="👁️ צפייה והעלאת קובץ הזמנה לתיקיית לקוח"
+                        >
+                          <Eye className={`w-3.5 h-3.5 ${isLight ? 'text-sky-600' : 'text-cyan-400'}`} />
+                          <span>מסמך 👁️</span>
+                        </button>
                         <button
                           onClick={() => setSelectedOrder(order)}
                           className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition flex items-center gap-1 ${
@@ -1108,8 +1182,7 @@ export const OrdersDashboard: React.FC<OrdersDashboardProps> = ({
                               : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700'
                           }`}
                         >
-                          <Eye className={`w-3.5 h-3.5 ${isLight ? 'text-sky-600' : 'text-cyan-400'}`} />
-                          <span>צפה</span>
+                          <span>כרטיס</span>
                         </button>
                         <button
                           onClick={() => onSendWhatsApp(order)}
@@ -1141,6 +1214,18 @@ export const OrdersDashboard: React.FC<OrdersDashboardProps> = ({
         onClose={() => setSelectedOrder(null)}
         onUpdateStatus={onUpdateStatus}
         onGenerateDeliveryNote={onGenerateDeliveryNote}
+      />
+
+      {/* View E: Order Document Viewer & Customer Folder Modal (Eye Button) */}
+      <OrderDocumentViewerModal
+        order={viewerModalOrder}
+        isOpen={isViewerModalOpen}
+        onClose={() => {
+          setIsViewerModalOpen(false);
+          setViewerModalOrder(null);
+        }}
+        onUpdateOrderDocument={onUpdateOrderDocument}
+        showToast={showToast}
       />
     </div>
   );

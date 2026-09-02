@@ -20,7 +20,8 @@ import {
   Printer,
   Package,
   Boxes,
-  Scale
+  Scale,
+  Eye
 } from 'lucide-react';
 import { Order, OrderStatus } from '../types';
 import { useTheme } from '../context/ThemeContext';
@@ -46,7 +47,7 @@ export const OrderCardModal: React.FC<OrderCardModalProps> = ({
   const [isSigning, setIsSigning] = useState(false);
   const [signatureUrl, setSignatureUrl] = useState<string | null>(order.signatureImage || null);
   const [isGenerated, setIsGenerated] = useState(!!order.deliveryNote && order.deliveryNote !== 'טרם הופקה');
-  const [activeTab, setActiveTab] = useState<'details' | 'signature' | 'pdf'>('details');
+  const [activeTab, setActiveTab] = useState<'details' | 'signature' | 'pdf' | 'document'>('details');
 
   // Canvas for Digital Signature
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -202,6 +203,17 @@ export const OrderCardModal: React.FC<OrderCardModalProps> = ({
             <Printer className="w-3.5 h-3.5" />
             <span>תעודת משלוח (PDF)</span>
             {isGenerated && <span className="w-2 h-2 rounded-full bg-emerald-500" />}
+          </button>
+          <button
+            onClick={() => setActiveTab('document')}
+            className={`px-4 py-2 text-xs font-black rounded-t-xl transition border-b-2 flex items-center gap-1.5 ${
+              activeTab === 'document'
+                ? isLight ? 'border-sky-600 text-sky-800 bg-white' : 'border-cyan-400 text-cyan-400 bg-slate-900'
+                : isLight ? 'border-transparent text-slate-500 hover:text-slate-800' : 'border-transparent text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <Eye className="w-3.5 h-3.5 text-sky-500" />
+            <span>קובץ הזמנה ותיקייה 👁️</span>
           </button>
         </div>
 
@@ -576,6 +588,110 @@ export const OrderCardModal: React.FC<OrderCardModalProps> = ({
                   <CheckCircle2 className="w-4 h-4" />
                   <span>סנכרן לטבלת 'תעודות_משלוח_וחתימות' (טאב 3)</span>
                 </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Tab 4: Order Document & Customer Drive Folder */}
+        {activeTab === 'document' && (
+          <div className="p-5 space-y-4">
+            <div className={`p-4 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
+              isLight ? 'bg-sky-50/70 border-sky-200' : 'bg-slate-950 border-slate-800'
+            }`}>
+              <div className="space-y-0.5">
+                <div className="flex items-center gap-2">
+                  <Eye className="w-4 h-4 text-sky-600 dark:text-cyan-400" />
+                  <h3 className={`text-sm font-black ${isLight ? 'text-slate-900' : 'text-white'}`}>
+                    קובץ הזמנה מקורי ותיקיית לקוח: {order.customerName} ({order.customerNumber || '607125'})
+                  </h3>
+                </div>
+                <p className="text-xs text-slate-500">
+                  אינטגרציה ישירה עם תיקיית הלקוח ב-Google Drive וקישור צפייה ישיר בגיליון Google Sheets
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2 flex-wrap">
+                <a
+                  href={order.customerFolderUrl || `https://drive.google.com/drive/folders/1JGNbTlmB5yBH_cLOApKTvE39CEL6roFF`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3.5 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-black transition flex items-center gap-1.5 shadow-sm"
+                >
+                  <Building className="w-3.5 h-3.5" />
+                  <span>תיקיית לקוח ב-Drive</span>
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+
+                <a
+                  href={`https://docs.google.com/spreadsheets/d/1VA9J6n9IYcooO_s2xOpnkvyDQWWQD3pfhh0cnenCkoA/edit`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={`px-3.5 py-2 rounded-xl border text-xs font-black transition flex items-center gap-1.5 shadow-sm ${
+                    isLight ? 'bg-white hover:bg-slate-50 text-slate-800 border-slate-300' : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700'
+                  }`}
+                >
+                  <FileText className="w-3.5 h-3.5 text-emerald-500" />
+                  <span>פתח ב-Sheets</span>
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+              </div>
+            </div>
+
+            {/* Document Preview Box */}
+            <div className="border border-slate-300 dark:border-slate-700 rounded-2xl bg-white text-slate-950 p-6 shadow-md font-sans text-xs space-y-4">
+              <div className="flex items-start justify-between border-b pb-3 border-slate-300">
+                <div>
+                  <p className="font-mono text-slate-600">תאריך: <span className="font-bold text-slate-900">{order.orderDate || '10/08/2026'}</span></p>
+                  <p className="font-mono text-slate-600">שעה: <span className="font-bold text-slate-900">08:07</span></p>
+                </div>
+                <div className="text-center">
+                  <h4 className="text-xl font-black">הזמנת לקוח</h4>
+                  <p className="text-lg font-black font-mono text-sky-800">{order.orderNumber || order.orderId}</p>
+                </div>
+                <div className="text-left font-mono text-[11px] text-slate-600">
+                  <p>עוסק: 512001678</p>
+                  <p className="font-bold text-slate-900">ח.סבן בע"מ</p>
+                </div>
+              </div>
+
+              <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl">
+                <span className="text-slate-500 text-[11px] font-bold">לכבוד:</span>
+                <p className="font-black text-sm text-slate-900">{order.customerName} ({order.customerNumber || '607125'})</p>
+                <p className="text-slate-600">כתובת אספקה: {order.siteAddress || order.destination}</p>
+                <p className="text-slate-600">איש קשר: {order.orderContact || 'עודד — 050-6610054'}</p>
+              </div>
+
+              <div className="border border-slate-300 rounded-xl overflow-hidden">
+                <table className="w-full text-right text-xs">
+                  <thead>
+                    <tr className="bg-slate-100 border-b border-slate-300 font-bold text-slate-700">
+                      <th className="p-2">מק"ט</th>
+                      <th className="p-2">שם פריט</th>
+                      <th className="p-2 text-center">כמות</th>
+                      <th className="p-2 text-center">משקל</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-200 font-medium">
+                    {order.itemsList && order.itemsList.length > 0 ? (
+                      order.itemsList.map((i, idx) => (
+                        <tr key={idx}>
+                          <td className="p-2 font-mono font-bold text-sky-800">{i.sku}</td>
+                          <td className="p-2 font-bold">{i.name}</td>
+                          <td className="p-2 text-center font-mono font-black">{i.quantity} {i.unit}</td>
+                          <td className="p-2 text-center font-mono text-slate-600">{(i.quantity * 25).toLocaleString()} ק"ג</td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td className="p-2 font-mono font-bold text-sky-800">15710</td>
+                        <td className="p-2 font-bold">טיח חוץ 710 שק 25 ק"ג</td>
+                        <td className="p-2 text-center font-mono font-black">42.00 שק</td>
+                        <td className="p-2 text-center font-mono text-slate-600">1,050.00 ק"ג</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
               </div>
             </div>
           </div>

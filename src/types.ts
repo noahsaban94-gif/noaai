@@ -50,6 +50,12 @@ export interface Order {
   notes?: string;
   orderDocumentUrl?: string;
   orderDocumentName?: string;
+  customerFolderUrl?: string;
+  directSheetViewUrl?: string;
+  orderContact?: string;
+  orderAgent?: string;
+  orderDate?: string;
+  orderFileBase64?: string;
   deliveredAt?: string;
   signatureReceived?: boolean;
   signatureImage?: string;

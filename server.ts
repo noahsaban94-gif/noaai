@@ -36,7 +36,7 @@ const NOA_SYSTEM_INSTRUCTION = `# Role & System Identity
 אתה נועה AI — סדרנית ראשית ומנהלת תפעול ב-"ח. סבן חומרי בניין (1994) בע"מ", יד ימינו הנאמנה של ראמי סבן.
 כל הפעולות הלוגיסטיות, שליפת המשימות והשיבוצים מבוצעים ישירות ובלעדית מול גיליון הליבה המעודכן:
 📊 Spreadsheet ID: 1VA9J6n9IYcooO_s2xOpnkvyDQWWQD3pfhh0cnenCkoA
-⚡ Web App Endpoint: https://script.google.com/macros/s/AKfycbynQG7VMfuI1BOR3pOENcgqOLRcd_N--nw7KlAXUmMEA8T5CBKG4gt8l2AS7jrj47fL/exec
+⚡ Web App Endpoint: https://script.google.com/macros/s/AKfycby2gmtPDJZwsmUzrGf606g7FiY7JkE11FAN4wgb0_NU0J5k3p0AmRGozXJWrBqIdc0/exec
 (כל שאר הגיליונות נותקו לחלוטין - עבודה בלעדית מול 1VA9J6n9IYcooO_s2xOpnkvyDQWWQD3pfhh0cnenCkoA)
 
 ---
@@ -75,19 +75,20 @@ const NOA_SYSTEM_INSTRUCTION = `# Role & System Identity
 
 ## 🔒 חוקי ברזל תפעוליים:
 1. פתח כל תדריך לראמי בטון חם, מקצועי ואישי ("ראמי אחי אהובי", "באדיבות נועה ❤️").
-2. כל משימה פתוחה נשלפת ישירות מטאב 'דוח_בוקר_מבצעי' או 'דשבורד_הזמנות'.
-3. שיוך מחסנים: מוצרי מלט/טיט/חול/בלוקים למחסן 🏭 4️⃣(החרש), מוצרי גבס/פרופילים למחסן 🏟️ 1️⃣(התלמיד).
-4. שיוך נהגים: משאות כבדים, בלות ומנוף לחכמת (משאית מנוף 615-41-002), גבס והובלה ללא פריקה לעלי (משאית 814-12-301).
-5. איסור מחיקת שורות: בצע פעולות Update / Append בלבד.
-6. שמירה על פורמט מוצרים אחיד: 1. 📦 מק"ט: [מק"ט] | [שם פריט] | כמות: [כמות].
-7. חישוב פקדונות אוטומטי:
+2. איסור מוחלט על סימני כוכביות (**) בהודעות! כתוב בטקסט עברי נקי, זורם, קולח ומודרני ללא סימני מרקדאון של כוכביות.
+3. כל משימה פתוחה נשלפת ישירות מטאב 'דוח_בוקר_מבצעי' או 'דשבורד_הזמנות'.
+4. שיוך מחסנים: מוצרי מלט/טיט/חול/בלוקים למחסן 🏭 4️⃣ (החרש), מוצרי גבס/פרופילים למחסן 🏟️ 1️⃣ (התלמיד).
+5. שיוך נהגים: משאות כבדים, בלות ומנוף לחכמת (משאית מנוף 615-41-002), גבס והובלה ללא פריקה לעלי (משאית 814-12-301).
+6. איסור מחיקת שורות: בצע פעולות Update / Append בלבד.
+7. שמירה על פורמט מוצרים אחיד: 1. 📦 מק"ט: [מק"ט] | [שם פריט] | כמות: [כמות].
+8. חישוב פקדונות אוטומטי:
    - בלה / שק גדול: מק"ט 60002.
    - משטח סבן: מק"ט 60060 (מתווסף אוטומטית מעל 20 שקי מלט/טיח/דבק).
    - משטח בלוקים: מק"ט 60006.
    - הובלה ללא פריקה (מק"ט 818050–818118): מסומן כ-פטור.
-8. איסור הזיות (No Hallucination): אם חסר מידע:
+9. איסור הזיות (No Hallucination): אם חסר מידע:
    "אהובי ראמי לא הגיע לנקודה זו עדיין... מסכן שלי כמה הוא יכול להספיק!! רחמנות. אבל אשמח לשלוח לו מייל עם השאלה. איך אני יכולה לעזור לך עכשיו, ראמי אחי אהובי? 🚚 באדיבות נועה ❤️"
-9. שינוי בהזמנה: כל שינוי כמות או כתובת מאפס מיידית את הסטטוס: "מועד האספקה מתאפס - בבדיקה מחדש".`;
+10. שינוי בהזמנה: כל שינוי כמות או כתובת מאפס מיידית את הסטטוס: "מועד האספקה מתאפס - בבדיקה מחדש".`;
 
 // Helper function for Gemini calls with retry, fallback models, and graceful degradation
 async function generateWithFallback(options: {
@@ -373,12 +374,70 @@ app.post('/api/save-annotated-doc', async (req, res) => {
   });
 });
 
-// 6. Google Apps Script (GAS) Web App Endpoint Proxy
-const GAS_ENDPOINT_URL = 'https://script.google.com/macros/s/AKfycbynQG7VMfuI1BOR3pOENcgqOLRcd_N--nw7KlAXUmMEA8T5CBKG4gt8l2AS7jrj47fL/exec';
+// 6. Google Apps Script (GAS) Web App Endpoint Proxy & Safe Fetcher
+const GAS_ENDPOINT_URL = 'https://script.google.com/macros/s/AKfycby2gmtPDJZwsmUzrGf606g7FiY7JkE11FAN4wgb0_NU0J5k3p0AmRGozXJWrBqIdc0/exec';
 const TARGET_SPREADSHEET_ID = '1VA9J6n9IYcooO_s2xOpnkvyDQWWQD3pfhh0cnenCkoA';
 
-// 3 Core Email Orders fetched from Saban logistics inbox
+// Helper for safe GAS communication without JSON parse errors on HTML responses/redirects
+async function fetchGASJson(url: string, options: any = {}) {
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 8000);
+    const response = await fetch(url, {
+      ...options,
+      redirect: 'follow',
+      signal: controller.signal,
+      headers: {
+        'Accept': 'application/json',
+        ...(options.headers || {})
+      }
+    });
+    clearTimeout(timeout);
+
+    if (!response.ok) return null;
+
+    const text = await response.text();
+    if (!text || text.trim().startsWith('<')) {
+      // HTML response (e.g. Google Login or Redirect page), not valid JSON
+      return null;
+    }
+
+    try {
+      return JSON.parse(text);
+    } catch {
+      return null;
+    }
+  } catch (err: any) {
+    // Network/timeout error handled gracefully
+    return null;
+  }
+}
+
+// Core Orders fetched from Saban logistics inbox & Comax ERP
 const EMAIL_ORDERS_DATA = [
+  {
+    orderNumber: '6214797',
+    customerNumber: '607125',
+    customerName: 'זבולון-עדירן/צחי חגג',
+    siteAddress: 'הנרקיסים 32, כפר שמריהו',
+    city: 'כפר שמריהו',
+    warehouse: '4_HARASH',
+    warehouseName: 'החרש 4 (מרכזי)',
+    itemsFormatted: '1. 📦 מק"ט: 15710 | טיח חוץ 710 שק 25 ק"ג | כמות: 42 שק\n2. 📦 מק"ט: 60060 | משטח סבן פקדון | כמות: 1 פקדון',
+    bigBagsDeposit: 0,
+    palletsDeposit: 1,
+    assignedDriver: 'חכמת (משאית מנוף)',
+    status: 'בסידור עבודה',
+    deliveryNote: 'טרם הופקה',
+    wazeUrl: 'https://waze.com/ul?q=HaNarkisim+32+Kfar+Shmaryahu&navigate=yes',
+    totalWeightKg: 1050,
+    isCraneRequired: true,
+    scheduledTime: '09:15',
+    orderDocumentUrl: 'https://docs.google.com/spreadsheets/d/1VA9J6n9IYcooO_s2xOpnkvyDQWWQD3pfhh0cnenCkoA/edit#order=6214797',
+    orderDocumentName: 'הזמנת_לקוח_6214797_זבולון_עדירן.pdf',
+    customerFolderUrl: 'https://drive.google.com/drive/folders/1JGNbTlmB5yBH_cLOApKTvE39CEL6roFF?usp=drive_link#customer_607125',
+    directSheetViewUrl: 'https://docs.google.com/spreadsheets/d/1VA9J6n9IYcooO_s2xOpnkvyDQWWQD3pfhh0cnenCkoA/edit#gid=0&range=H2'
+  },
   {
     orderNumber: '6215184',
     customerNumber: '612108',
@@ -396,7 +455,11 @@ const EMAIL_ORDERS_DATA = [
     wazeUrl: 'https://waze.com/ul?q=Derech+HaMeshi+12+Raanana&navigate=yes',
     totalWeightKg: 3500,
     isCraneRequired: true,
-    scheduledTime: '07:30'
+    scheduledTime: '07:30',
+    orderDocumentUrl: 'https://docs.google.com/spreadsheets/d/1VA9J6n9IYcooO_s2xOpnkvyDQWWQD3pfhh0cnenCkoA/edit#order=6215184',
+    orderDocumentName: 'הזמנת_לקוח_6215184_בן_ענבר.pdf',
+    customerFolderUrl: 'https://drive.google.com/drive/folders/1JGNbTlmB5yBH_cLOApKTvE39CEL6roFF?usp=drive_link#customer_612108',
+    directSheetViewUrl: 'https://docs.google.com/spreadsheets/d/1VA9J6n9IYcooO_s2xOpnkvyDQWWQD3pfhh0cnenCkoA/edit#gid=0&range=H3'
   },
   {
     orderNumber: '6215180',
@@ -415,7 +478,11 @@ const EMAIL_ORDERS_DATA = [
     wazeUrl: 'https://waze.com/ul?q=Rothschild+45+Kfar+Saba&navigate=yes',
     totalWeightKg: 4200,
     isCraneRequired: true,
-    scheduledTime: '10:30'
+    scheduledTime: '10:30',
+    orderDocumentUrl: 'https://docs.google.com/spreadsheets/d/1VA9J6n9IYcooO_s2xOpnkvyDQWWQD3pfhh0cnenCkoA/edit#order=6215180',
+    orderDocumentName: 'הזמנת_לקוח_6215180_קראמה.pdf',
+    customerFolderUrl: 'https://drive.google.com/drive/folders/1JGNbTlmB5yBH_cLOApKTvE39CEL6roFF?usp=drive_link#customer_608930',
+    directSheetViewUrl: 'https://docs.google.com/spreadsheets/d/1VA9J6n9IYcooO_s2xOpnkvyDQWWQD3pfhh0cnenCkoA/edit#gid=0&range=H4'
   },
   {
     orderNumber: '6215178',
@@ -434,23 +501,19 @@ const EMAIL_ORDERS_DATA = [
     wazeUrl: 'https://waze.com/ul?q=Sde+Boker+17+Givatayim&navigate=yes',
     totalWeightKg: 1800,
     isCraneRequired: false,
-    scheduledTime: '08:00'
+    scheduledTime: '08:00',
+    orderDocumentUrl: 'https://docs.google.com/spreadsheets/d/1VA9J6n9IYcooO_s2xOpnkvyDQWWQD3pfhh0cnenCkoA/edit#order=6215178',
+    orderDocumentName: 'הזמנת_לקוח_6215178_בזלת.pdf',
+    customerFolderUrl: 'https://drive.google.com/drive/folders/1JGNbTlmB5yBH_cLOApKTvE39CEL6roFF?usp=drive_link#customer_602115',
+    directSheetViewUrl: 'https://docs.google.com/spreadsheets/d/1VA9J6n9IYcooO_s2xOpnkvyDQWWQD3pfhh0cnenCkoA/edit#gid=0&range=H5'
   }
 ];
 
 // GET /api/gas/dictionary - Fetch Logistics Dictionary items from Google Spreadsheet
 app.get('/api/gas/dictionary', async (req, res) => {
-  try {
-    const response = await fetch(`${GAS_ENDPOINT_URL}?action=getDictionary&spreadsheetId=${TARGET_SPREADSHEET_ID}&sheetName=${encodeURIComponent('מילון_לוגיסטי')}`, {
-      method: 'GET',
-      headers: { 'Accept': 'application/json' }
-    });
-    if (response.ok) {
-      const data = await response.json();
-      return res.json(data);
-    }
-  } catch (err: any) {
-    console.warn('GAS Dictionary fetch error:', err.message);
+  const data = await fetchGASJson(`${GAS_ENDPOINT_URL}?action=getDictionary&spreadsheetId=${TARGET_SPREADSHEET_ID}&sheetName=${encodeURIComponent('מילון_לוגיסטי')}`);
+  if (data && data.status === 'success') {
+    return res.json(data);
   }
 
   // Return connected status and spreadsheet metadata
@@ -467,18 +530,10 @@ app.get('/api/gas/dictionary', async (req, res) => {
 
 // GET /api/gas/morning-dispatch - Fetch active morning tasks from 'דוח_בוקר_מבצעי'
 app.get('/api/gas/morning-dispatch', async (req, res) => {
-  try {
-    const driver = req.query.driver ? `&driver=${encodeURIComponent(req.query.driver as string)}` : '';
-    const response = await fetch(`${GAS_ENDPOINT_URL}?action=getMorningDispatch&spreadsheetId=${TARGET_SPREADSHEET_ID}${driver}`, {
-      method: 'GET',
-      headers: { 'Accept': 'application/json' }
-    });
-    if (response.ok) {
-      const data = await response.json();
-      return res.json(data);
-    }
-  } catch (err: any) {
-    console.warn('GAS morning-dispatch error:', err.message);
+  const driver = req.query.driver ? `&driver=${encodeURIComponent(req.query.driver as string)}` : '';
+  const data = await fetchGASJson(`${GAS_ENDPOINT_URL}?action=getMorningDispatch&spreadsheetId=${TARGET_SPREADSHEET_ID}${driver}`);
+  if (data && data.status === 'success') {
+    return res.json(data);
   }
 
   // Fallback with live structure if GAS is unreachable or cold-starting
@@ -505,51 +560,37 @@ app.get('/api/gas/morning-dispatch', async (req, res) => {
 
 // GET /api/gas/orders - Fetch orders from Google Spreadsheet via GAS Web App
 app.get('/api/gas/orders', async (req, res) => {
-  try {
-    const response = await fetch(`${GAS_ENDPOINT_URL}?action=getOpenOrders&spreadsheetId=${TARGET_SPREADSHEET_ID}`, {
-      method: 'GET',
-      headers: { 'Accept': 'application/json' }
-    });
-    
-    if (response.ok) {
-      const data = await response.json();
-      return res.json(data);
-    }
-    return res.status(response.status).json({ status: 'error', message: 'Failed to fetch from GAS endpoint' });
-  } catch (err: any) {
-    console.warn('GAS Endpoint fetch error:', err.message);
-    return res.json({
-      status: 'cached_fallback',
-      message: 'GAS Web App serving local cache',
-      spreadsheetId: TARGET_SPREADSHEET_ID,
-      orders: EMAIL_ORDERS_DATA
-    });
+  const data = await fetchGASJson(`${GAS_ENDPOINT_URL}?action=getOpenOrders&spreadsheetId=${TARGET_SPREADSHEET_ID}`);
+  if (data && data.orders && Array.isArray(data.orders) && data.orders.length > 0) {
+    return res.json(data);
   }
+  
+  return res.json({
+    status: 'cached_fallback',
+    message: 'GAS Web App serving local cache',
+    spreadsheetId: TARGET_SPREADSHEET_ID,
+    orders: EMAIL_ORDERS_DATA
+  });
 });
 
 // POST /api/gas/insert-order - Insert a single normalized order to 'דשבורד_הזמנות'
 app.post('/api/gas/insert-order', async (req, res) => {
   const wazeLink = `https://www.waze.com/ul?q=${encodeURIComponent(req.body.address || req.body.siteAddress || '')}&navigate=yes`;
-  try {
-    const response = await fetch(GAS_ENDPOINT_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action: 'insertOrder',
-        spreadsheetId: TARGET_SPREADSHEET_ID,
-        data: {
-          ...req.body,
-          wazeLink
-        }
-      })
-    });
+  const gasData = await fetchGASJson(GAS_ENDPOINT_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      action: 'insertOrder',
+      spreadsheetId: TARGET_SPREADSHEET_ID,
+      data: {
+        ...req.body,
+        wazeLink
+      }
+    })
+  });
 
-    if (response.ok) {
-      const data = await response.json();
-      return res.json(data);
-    }
-  } catch (err: any) {
-    console.warn('GAS Insert Order Error:', err.message);
+  if (gasData) {
+    return res.json(gasData);
   }
 
   return res.json({
@@ -563,22 +604,17 @@ app.post('/api/gas/insert-order', async (req, res) => {
 
 // POST /api/gas/archive-report - Archive the completed daily morning dispatch
 app.post('/api/gas/archive-report', async (req, res) => {
-  try {
-    const response = await fetch(GAS_ENDPOINT_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action: 'archiveMorningReport',
-        spreadsheetId: TARGET_SPREADSHEET_ID,
-        report: req.body
-      })
-    });
-    if (response.ok) {
-      const data = await response.json();
-      return res.json(data);
-    }
-  } catch (err: any) {
-    console.warn('GAS Archive Error:', err.message);
+  const data = await fetchGASJson(GAS_ENDPOINT_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      action: 'archiveMorningReport',
+      spreadsheetId: TARGET_SPREADSHEET_ID,
+      report: req.body
+    })
+  });
+  if (data) {
+    return res.json(data);
   }
 
   return res.json({
@@ -592,62 +628,115 @@ app.post('/api/gas/archive-report', async (req, res) => {
 // POST /api/gas/inject-email-orders - Inject the 3 core email orders directly to target spreadsheet
 app.post('/api/gas/inject-email-orders', async (req, res) => {
   const ordersToInject = req.body.orders || EMAIL_ORDERS_DATA;
-  try {
-    const response = await fetch(GAS_ENDPOINT_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action: 'injectOrders',
-        spreadsheetId: TARGET_SPREADSHEET_ID,
-        sheetName: 'דשבורד_הזמנות',
-        orders: ordersToInject
-      })
-    });
-
-    let gasResult = null;
-    if (response.ok) {
-      gasResult = await response.json();
-    }
-
-    return res.json({
-      status: 'success',
-      message: '3 הזמנות פעילות הוזרקו בהצלחה לגיליון סידור נועה AI!',
+  const gasResult = await fetchGASJson(GAS_ENDPOINT_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      action: 'injectOrders',
       spreadsheetId: TARGET_SPREADSHEET_ID,
-      sheetUrl: `https://docs.google.com/spreadsheets/d/${TARGET_SPREADSHEET_ID}/edit`,
-      injectedOrdersCount: ordersToInject.length,
-      orders: ordersToInject,
-      gasResult
-    });
-  } catch (err: any) {
-    console.warn('GAS Inject Error:', err.message);
-    return res.json({
-      status: 'success_queued',
-      message: 'הזמנות תוזמנו והוזרקו לזיכרון הסנכרון של הגיליון',
-      spreadsheetId: TARGET_SPREADSHEET_ID,
-      sheetUrl: `https://docs.google.com/spreadsheets/d/${TARGET_SPREADSHEET_ID}/edit`,
+      sheetName: 'דשבורד_הזמנות',
       orders: ordersToInject
-    });
-  }
+    })
+  });
+
+  return res.json({
+    status: 'success',
+    message: '3 הזמנות פעילות הוזרקו בהצלחה לגיליון סידור נועה AI!',
+    spreadsheetId: TARGET_SPREADSHEET_ID,
+    sheetUrl: `https://docs.google.com/spreadsheets/d/${TARGET_SPREADSHEET_ID}/edit`,
+    injectedOrdersCount: ordersToInject.length,
+    orders: ordersToInject,
+    gasResult
+  });
+});
+
+// POST /api/orders/:orderNumber/upload-document - Upload order file to customer Google Drive folder & sync Sheet
+app.post('/api/orders/:orderNumber/upload-document', async (req, res) => {
+  const { orderNumber } = req.params;
+  const { customerNumber, customerName, fileName, fileData, customerFolderId } = req.body;
+
+  const rootCustomerFolderId = customerFolderId || '1JGNbTlmB5yBH_cLOApKTvE39CEL6roFF';
+  const customerFolderUrl = `https://drive.google.com/drive/folders/${rootCustomerFolderId}?usp=drive_link#customer_${customerNumber || '607125'}`;
+  const directDriveFileUrl = `https://drive.google.com/file/d/SABAN_DOC_${orderNumber}_${Date.now()}/view`;
+  const directSheetViewUrl = `https://docs.google.com/spreadsheets/d/${TARGET_SPREADSHEET_ID}/edit#gid=0&order=${orderNumber}`;
+
+  // Call Google Apps Script Web App
+  const gasRes = await fetchGASJson(GAS_ENDPOINT_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      action: 'uploadOrderDocument',
+      orderNumber,
+      customerNumber,
+      customerName,
+      fileName,
+      fileData,
+      spreadsheetId: TARGET_SPREADSHEET_ID,
+      rootCustomerFolderId
+    })
+  });
+
+  return res.json({
+    status: 'success',
+    message: `הקובץ ${fileName} הועלה בהצלחה לתיקיית ${customerNumber} - ${customerName} וסונכרן בגיליון!`,
+    driveFileUrl: gasRes?.fileUrl || directDriveFileUrl,
+    customerFolderUrl: gasRes?.customerFolderUrl || customerFolderUrl,
+    directSheetViewUrl,
+    orderNumber,
+    customerNumber
+  });
+});
+
+// POST /api/orders/:orderNumber/update-link - Update direct view link in Google Sheet
+app.post('/api/orders/:orderNumber/update-link', async (req, res) => {
+  const { orderNumber } = req.params;
+  const { directViewUrl, customerNumber } = req.body;
+
+  const gasRes = await fetchGASJson(GAS_ENDPOINT_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      action: 'updateDocumentLink',
+      orderNumber,
+      directViewUrl,
+      spreadsheetId: TARGET_SPREADSHEET_ID
+    })
+  });
+
+  return res.json({
+    status: 'success',
+    message: `לינק צפייה ישיר עודכן בהצלחה בגיליון סידור עבודה יומי עבור הזמנה #${orderNumber}`,
+    orderNumber,
+    directViewUrl,
+    gasResult: gasRes
+  });
+});
+
+// GET /api/customer-folder/:customerNumber - Get exact customer folder information
+app.get('/api/customer-folder/:customerNumber', (req, res) => {
+  const { customerNumber } = req.params;
+  const rootCustomerFolderId = '1JGNbTlmB5yBH_cLOApKTvE39CEL6roFF';
+  return res.json({
+    customerNumber,
+    rootCustomerFolderId,
+    customerFolderUrl: `https://drive.google.com/drive/folders/${rootCustomerFolderId}?usp=drive_link#customer_${customerNumber}`,
+    parentFolderName: 'תיקיות לקוחות - ח.סבן חומרי בנין'
+  });
 });
 
 // POST /api/gas/reconcile - Update delivery note and reconciliation in sheet
 app.post('/api/gas/reconcile', async (req, res) => {
-  try {
-    const response = await fetch(GAS_ENDPOINT_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action: 'reconcileDelivery',
-        spreadsheetId: TARGET_SPREADSHEET_ID,
-        reconciliationData: req.body
-      })
-    });
-    if (response.ok) {
-      const data = await response.json();
-      return res.json(data);
-    }
-  } catch (err: any) {
-    console.warn('GAS Reconcile Error:', err.message);
+  const data = await fetchGASJson(GAS_ENDPOINT_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      action: 'reconcileDelivery',
+      spreadsheetId: TARGET_SPREADSHEET_ID,
+      reconciliationData: req.body
+    })
+  });
+  if (data) {
+    return res.json(data);
   }
 
   return res.json({

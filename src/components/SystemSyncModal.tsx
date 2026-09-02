@@ -86,7 +86,7 @@ export const SystemSyncModal: React.FC<SystemSyncModalProps> = ({
               </span>
             </div>
             <p className="text-slate-400 font-mono text-[11px] break-all">
-              {systemInfo?.gasEndpoint || 'https://script.google.com/macros/s/AKfycbynQG7VMfuI1BOR3pOENcgqOLRcd_N--nw7KlAXUmMEA8T5CBKG4gt8l2AS7jrj47fL/exec'}
+              {systemInfo?.gasEndpoint || 'https://script.google.com/macros/s/AKfycby2gmtPDJZwsmUzrGf606g7FiY7JkE11FAN4wgb0_NU0J5k3p0AmRGozXJWrBqIdc0/exec'}
             </p>
           </div>
 
