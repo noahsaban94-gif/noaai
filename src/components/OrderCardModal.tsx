@@ -624,7 +624,7 @@ export const OrderCardModal: React.FC<OrderCardModalProps> = ({
                 </a>
 
                 <a
-                  href={`https://docs.google.com/spreadsheets/d/1VA9J6n9IYcooO_s2xOpnkvyDQWWQD3pfhh0cnenCkoA/edit`}
+                  href={`https://docs.google.com/spreadsheets/d/1VA9J6n9IYcooO_s2xOpnkvyDQWWQD3pfhh0cnenCkoA/edit#gid=0&order=${order.orderNumber}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className={`px-3.5 py-2 rounded-xl border text-xs font-black transition flex items-center gap-1.5 shadow-sm ${
@@ -638,62 +638,79 @@ export const OrderCardModal: React.FC<OrderCardModalProps> = ({
               </div>
             </div>
 
-            {/* Document Preview Box */}
-            <div className="border border-slate-300 dark:border-slate-700 rounded-2xl bg-white text-slate-950 p-6 shadow-md font-sans text-xs space-y-4">
-              <div className="flex items-start justify-between border-b pb-3 border-slate-300">
+            {/* Real Uploaded Document Display or Upload Notice */}
+            {order.orderFileBase64 ? (
+              <div className="space-y-3">
+                <div className={`p-3 rounded-2xl border flex items-center justify-between text-xs ${
+                  isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-900 border-slate-800'
+                }`}>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                    <span className="font-bold text-slate-900 dark:text-white font-mono">
+                      {order.orderDocumentName || `הזמנת_לקוח_${order.orderNumber}.pdf`}
+                    </span>
+                    <span className="text-[11px] text-slate-500 font-sans">
+                      (הועלה פיזית וסונכרן לגיליון ולתיקייה)
+                    </span>
+                  </div>
+
+                  <a
+                    href={order.orderFileBase64}
+                    download={order.orderDocumentName || `הזמנה_${order.orderNumber}.pdf`}
+                    className="px-3 py-1 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs flex items-center gap-1 transition"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    <span>הורד קובץ</span>
+                  </a>
+                </div>
+
+                <div className="border border-slate-300 dark:border-slate-700 rounded-2xl bg-slate-950 p-2 overflow-hidden flex items-center justify-center min-h-[420px]">
+                  {order.orderFileBase64.startsWith('data:application/pdf') || (order.orderDocumentName && order.orderDocumentName.toLowerCase().endsWith('.pdf')) ? (
+                    <iframe
+                      src={order.orderFileBase64}
+                      className="w-full h-[520px] rounded-xl border border-slate-800 bg-white"
+                      title={`קובץ הזמנה PDF #${order.orderNumber}`}
+                    />
+                  ) : order.orderFileBase64.startsWith('data:image') ? (
+                    <img
+                      src={order.orderFileBase64}
+                      alt={order.orderDocumentName || 'מסמך הזמנה'}
+                      className="max-w-full h-auto max-h-[520px] object-contain rounded-xl shadow-lg mx-auto"
+                    />
+                  ) : (
+                    <div className="text-center p-6 text-slate-400 space-y-2">
+                      <FileText className="w-12 h-12 text-cyan-400 mx-auto" />
+                      <p className="font-bold text-white text-sm">{order.orderDocumentName || 'קובץ הזמנה'}</p>
+                      <p className="text-xs">הקובץ נשמר בתיקיית הלקוח ב-Drive.</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className={`p-8 rounded-2xl border-2 border-dashed text-center flex flex-col items-center justify-center gap-3 ${
+                isLight ? 'bg-slate-50 border-sky-200' : 'bg-slate-950 border-slate-800'
+              }`}>
+                <FileText className="w-10 h-10 text-slate-400" />
                 <div>
-                  <p className="font-mono text-slate-600">תאריך: <span className="font-bold text-slate-900">{order.orderDate || '10/08/2026'}</span></p>
-                  <p className="font-mono text-slate-600">שעה: <span className="font-bold text-slate-900">08:07</span></p>
+                  <h4 className={`text-sm font-black ${isLight ? 'text-slate-900' : 'text-white'}`}>
+                    טרם הועלה קובץ הזמנה פיזי עבור הזמנה #{order.orderNumber || order.orderId}
+                  </h4>
+                  <p className="text-xs text-slate-500 mt-1">
+                    לחץ על כפתור העין (👁️) בטבלת ההזמנות להעלאת קובץ PDF או תמונה ושמירה אוטומטית בתיקיית הלקוח ב-Google Drive.
+                  </p>
                 </div>
-                <div className="text-center">
-                  <h4 className="text-xl font-black">הזמנת לקוח</h4>
-                  <p className="text-lg font-black font-mono text-sky-800">{order.orderNumber || order.orderId}</p>
-                </div>
-                <div className="text-left font-mono text-[11px] text-slate-600">
-                  <p>עוסק: 512001678</p>
-                  <p className="font-bold text-slate-900">ח.סבן בע"מ</p>
-                </div>
+                <a
+                  href={order.customerFolderUrl || `https://drive.google.com/drive/folders/1JGNbTlmB5yBH_cLOApKTvE39CEL6roFF`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-sm mt-1"
+                >
+                  <Building className="w-3.5 h-3.5" />
+                  <span>פתח תיקיית לקוח ב-Google Drive</span>
+                  <ExternalLink className="w-3 h-3" />
+                </a>
               </div>
-
-              <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl">
-                <span className="text-slate-500 text-[11px] font-bold">לכבוד:</span>
-                <p className="font-black text-sm text-slate-900">{order.customerName} ({order.customerNumber || '607125'})</p>
-                <p className="text-slate-600">כתובת אספקה: {order.siteAddress || order.destination}</p>
-                <p className="text-slate-600">איש קשר: {order.orderContact || 'עודד — 050-6610054'}</p>
-              </div>
-
-              <div className="border border-slate-300 rounded-xl overflow-hidden">
-                <table className="w-full text-right text-xs">
-                  <thead>
-                    <tr className="bg-slate-100 border-b border-slate-300 font-bold text-slate-700">
-                      <th className="p-2">מק"ט</th>
-                      <th className="p-2">שם פריט</th>
-                      <th className="p-2 text-center">כמות</th>
-                      <th className="p-2 text-center">משקל</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-200 font-medium">
-                    {order.itemsList && order.itemsList.length > 0 ? (
-                      order.itemsList.map((i, idx) => (
-                        <tr key={idx}>
-                          <td className="p-2 font-mono font-bold text-sky-800">{i.sku}</td>
-                          <td className="p-2 font-bold">{i.name}</td>
-                          <td className="p-2 text-center font-mono font-black">{i.quantity} {i.unit}</td>
-                          <td className="p-2 text-center font-mono text-slate-600">{(i.quantity * 25).toLocaleString()} ק"ג</td>
-                        </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td className="p-2 font-mono font-bold text-sky-800">15710</td>
-                        <td className="p-2 font-bold">טיח חוץ 710 שק 25 ק"ג</td>
-                        <td className="p-2 text-center font-mono font-black">42.00 שק</td>
-                        <td className="p-2 text-center font-mono text-slate-600">1,050.00 ק"ג</td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+            )}
           </div>
         )}
       </div>

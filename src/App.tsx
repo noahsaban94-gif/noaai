@@ -115,15 +115,22 @@ function AppContent() {
     showToast(`סטטוס הזמנה #${orderNumber} עודכן ל: "${newStatus}"`, 'info');
   };
 
-  // Update order document URL and direct sheet link
-  const handleUpdateOrderDocument = (orderNumber: string, docUrl: string, docName: string, directSheetViewUrl?: string) => {
+  // Update order document URL, file content and direct sheet link
+  const handleUpdateOrderDocument = (
+    orderNumber: string,
+    docUrl: string,
+    docName: string,
+    directSheetViewUrl?: string,
+    orderFileBase64?: string
+  ) => {
     setOrders(prev => prev.map(o => {
       if (o.orderNumber === orderNumber || o.orderId === orderNumber) {
         return {
           ...o,
           orderDocumentUrl: docUrl,
           orderDocumentName: docName,
-          directSheetViewUrl: directSheetViewUrl || o.directSheetViewUrl
+          directSheetViewUrl: directSheetViewUrl || o.directSheetViewUrl,
+          orderFileBase64: orderFileBase64 !== undefined ? orderFileBase64 : o.orderFileBase64
         };
       }
       return o;
